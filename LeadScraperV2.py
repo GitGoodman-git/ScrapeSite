@@ -2,8 +2,6 @@ import aiohttp as aio
 import asyncio
 from random import choice,randint
 from selectolax.parser import HTMLParser
-from playwright.async_api import async_playwright
-from playwright_stealth import stealth_async
 import re,aiofiles
 import time
 from json import dumps
