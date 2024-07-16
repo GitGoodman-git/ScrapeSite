@@ -15,7 +15,7 @@ with open('tokens.json','r')as f:tokens=loads(f.read())
 task=None
 app=FastAPI()
 scraper_ins=LeadScraper()
-#app.mount("/static", StaticFiles(directory="./static/"), name="static")
+app.mount("/static", StaticFiles(directory="./static/"), name="static")
 
 app.add_middleware(
     CORSMiddleware,
