@@ -42,7 +42,7 @@ async def get():
     return {'status':'working..'}
     
 @app.get("/add_queries")
-async def get(niche:str,location:str,token:str,hook:str,min:int,start:int):
+async def get(niche:str,location:str,token:str,min:int,start:int):
         if(token in tokens):
              tries=tokens[token]['n']
              flag=False

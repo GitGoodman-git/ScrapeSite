@@ -85,7 +85,7 @@ class LeadScraper():
               self.pg=query[1]
               self.min=query[0]
               print('[Started]:',ctime)
-              await asyncio.gather(*[self.fetch_search_results() for i in range(0,int(self.min/10)+1)])
+              await asyncio.gather(*[self.fetch_search_results() for i in range(0,10)])
               print(self.count,self.requests,self.min)
               ctime=time.time()-ctime  
               await self.write_results_to_csv(f'./files/{query[5]}.csv',query[2],query[3],query[4])   
