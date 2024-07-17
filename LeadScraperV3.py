@@ -4,18 +4,19 @@ from random import choice,randint
 from selectolax.parser import HTMLParser
 import re,aiofiles
 import time
+import os
 from json import dumps
 from aiocsv import AsyncWriter
 import uuid
 from fake_useragent import UserAgent
 from playwright.async_api import async_playwright
-from playwright_stealth import stealth
+from playwright_stealth import stealth_async
 import urllib.parse as up
 import queue
 proxy = {
-    "server": "http://my-proxy-server.com:3128",
-    "username": "my-username",
-    "password": "my-password"
+    "server": os.environ.get('PROXY_SERVER'),
+    "username":os.environ.get('USER_NAME'),
+    "password":os.environ.get('PASSWD'),
 }
 agent=UserAgent()
 args=[
@@ -46,6 +47,8 @@ headers={
     'DNT': '1'
 }
 
+
+
 class LeadScraper():
     def __init__(self,proxy=None):
         self.data=[]
@@ -62,7 +65,8 @@ class LeadScraper():
             
         async with async_playwright() as playwright:  
             browser = await playwright.chromium.launch(args=args,proxy=self.proxy,headless=True) 
-            await asyncio.gather(*[self.fetch_search_results(await browser.new_context(viewport={'height':choice([1800,1900,1896,1812]),'width':choice([760,714,775])},user_agent=agent.random)) for i in range(0,30)])
+            
+            await asyncio.gather(*[self.fetch_search_results(await browser.new_context(user_agent=agent.random,viewport={'width':800,'height':1024})) for i in range(0,10)])
             
     async def send_json_to_webhook(self,url,niche,location,site,t,p,s,n):
      data=dumps({'niche':niche,
@@ -82,19 +86,23 @@ class LeadScraper():
     async def write_results_to_csv(self,filename,data):
      async with aiofiles.open(filename, 'a', newline='', encoding='utf-8') as file:
         writer = AsyncWriter(file)
-        await writer.writerow(['Niche','Location','Followers', 'Following','Link' 'Email']) 
+        await writer.writerow(['username','email','following','followers','link','niche','location']) 
         await writer.writerows(data)
-        
-
+    
+      
     async def fetch_search_results(self,context):
 
         page=await context.new_page()
+        
+        await stealth_async(page)
         while True:
             if not self.query_tasks.empty():      
               query=self.query_tasks.queue[0]
               counter = 0
-              tries=3
-              self.q= (f"site:{query[4]}  @gmail.com {query[2]} {query[3]} Followers @yahoo.com @icloud.com  @outlook.com")         
+              tries=20
+              self.q= choice((
+                  f"site:{query[4]}  @gmail.com {query[2]} {query[3]} Followers @yahoo.com @icloud.com  @outlook.com",
+                    f"site:{query[4]}  '@gmail.com' '{query[2]}' '{query[3]}' 'Followers' '@yahoo.com' '@icloud.com'  '@outlook.com'"))                  
               self.pg=query[1]
               self.min=query[0]
               uid=query[6]
@@ -109,29 +117,32 @@ class LeadScraper():
                url =f'https://www.bing.com/search?first={self.pg}&count=50&q={self.q}&rdr=1' 
                try:
                 await page.goto(url)
+                await asyncio.sleep(3)
+                if not await page.query_selector('.b_algo'):
+                   await page.click('.b_searchbox') 
+                   await page.keyboard.press('Enter') 
+                   await asyncio.sleep(1)
+                await page.wait_for_load_state('load')  
                 await asyncio.sleep(2)
-                #async with session.get(url, headers=h, proxy=self.proxy) as response:
-                 #   html = await response.text()
-                soup = HTMLParser(await page.content(), 'html.parser')
-                #link = ''
-                for item in soup.css('.b_algo'):
+                soup = HTMLParser(await page.content(), 'html.parser').css('.b_algo')
+                for item in soup:
                     data_text = item.text()
                     email = re.search(r'([A-Za-z0-9]+[.-_])*[A-Za-z0-9]+@[+A-Za-z0-9-]+(\.[A-Z|a-z]{2,})+', data_text)
                     link=''
                     username=''
-                    try:
-                       link =item.css_first('h2 a').attributes['href'] 
-                       username=link.split('/')[-2]
+                    link =item.css_first('a').attributes['href'] 
+                    try:username=link.split('/')[-2]
                     except:pass
-                    following = re.search(r'\b\d+[A-Z]*\s+Followers\b', data_text)
+                    
+                    following = re.search(r'\b\d+[A-Z]*\s+Following\b', data_text)
                     following = (following.group())[:-9] if following else ""
-                    followers = re.search(r'\b\d+[A-Z]*\s+Following\b', data_text)
+                    followers = re.search(r'\b\d+[A-Z]*\s+Followers\b', data_text)
                     followers = (followers.group())[:-9] if followers else ""
                     if email:
                         count += 1
                         email = following = email.group()
-                    if uid in self.files:self.files[uid].append((username,email,following,followers,link,query[2],query[3],query[4]))
-                    else:break
+                        if uid in self.files:self.files[uid].append((username,email,following,followers,link,query[2],query[3]))
+                        else:break
                     #else:self.data_.append((link.split('/')[-2], link, '', following, followers))              
                 self.count+= count
                 if(count):tries=3
@@ -155,12 +166,9 @@ class LeadScraper():
             self.query_tasks.put(data)                  
 
 if(__name__=='__main__'):
-   ls=LeadScraper(proxy = {
-    "server": "http://p.webshare.io:80",
-    "username": "mxlraznr-rotate",
-    "password": "cjyvyy6a20u0"
-})
+   
+   ls=LeadScraper( )
    uid=str(uuid.uuid4())
-   (ls.add([100,1,'fitness','haldwani','instagram.com','test_token',uid]))
+   (ls.add([1000,1,'fitness','haldwani','instagram.com','test_token',uid]))
    asyncio.run(ls.handler())
     

@@ -6,7 +6,6 @@ from fastapi.responses import FileResponse,JSONResponse
 import os
 from LeadScraperV3 import LeadScraper 
 from json import loads
-import multiprocessing
 import asyncio
 import uvicorn
 import uuid

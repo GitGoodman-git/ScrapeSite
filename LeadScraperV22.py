@@ -106,7 +106,7 @@ class LeadScraper():
                     if email:
                         count += 1
                         email = following = email.group()
-                    if uid in self.files:self.files[uid].append((username,email,following,followers,link,query[2],query[3]))
+                        if uid in self.files:self.files[uid].append((username,email,following,followers,link,query[2],query[3]))
                     else:break
                     #else:self.data_.append((link.split('/')[-2], link, '', following, followers))              
                 self.count+= count
