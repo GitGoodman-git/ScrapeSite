@@ -2,18 +2,19 @@
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
-
-from LeadScraperV2 import LeadScraper 
+from fastapi.responses import FileResponse,JSONResponse
+import os
+from LeadScraperV3 import LeadScraper 
 from json import loads
 import multiprocessing
 import asyncio
 import uvicorn
-import datetime
+import uuid
 tokens=""
+
 with open('tokens.json','r')as f:tokens=loads(f.read())
 task=None
-app=FastAPI()
+app=FastAPI(docs_url="/docs")
 scraper_ins=LeadScraper()
 app.mount("/static", StaticFiles(directory="./static/"), name="static")
 
@@ -39,31 +40,37 @@ async def lifespan(app: FastAPI):
 """
 @app.get('/')
 async def get():
-    return {'status':'working..'}
+    return JSONResponse({'status':'working..'},status_code=200)
     
 @app.get("/add_queries")
 async def get(niche:str,location:str,token:str,min:int=10,start:int=0):
+        
         if(token in tokens):
              tries=tokens[token]['n']
              flag=False
              if(min>tries):min=tries
-             elif(min<=0):return {'status':'param min should be greater than 0'}
+             elif(min<=0):return JSONResponse(status_code=400,content={'status':'param min should be greater than 0'})
              if(tries>0): 
-                  try:
-                   pos=scraper_ins.add((min,start,niche,location,'instagram.com',token))         
+                   uid=str(uuid.uuid4())
+                   print(f'http://localhost:8000/get_file?token=aabf3e2e-488f-4d63-8eae-df0b6f729f3d&uuid={uid}')
+                   scraper_ins.add((min,start,niche,location,'instagram.com',token,uid))         
                    tries-=min
-                   return {'status':f'Added your query to the queue at postion {pos}'}                    
-                  except Exception as e:print(e)   
-        else:return {'status':'Invalid Token Credentials'} 
-        return {'status':'Invalid Query'}
+                   return JSONResponse(status_code=200,content={'status':f'Added your query to the queue ','uuid':uid})                     
+        else:return JSONResponse(status_code=401,content={'status':'Invalid Token Credentials'}) 
+        return JSONResponse(status_code=400,content={'status':'Invalid Query'})
 
 @app.get("/get_file")
-async def get(token:str):
-     if(token in scraper_ins.files):
-          if scraper_ins.files[token]:
-              return FileResponse(f'./files/{token}.csv') 
-          else: return {'status':'File is being edited'}      
-     else:return {'status':'Invalid Token Credentials or File doesnt exist'}
+async def get(token:str,uid:str):
+     if(token in tokens):
+              file_path=f'./files/{token}_{uid.replace('//','')}.csv'
+              print(file_path)
+              if uuid in scraper_ins.files:
+                   JSONResponse(status_code=200,content={'status':'File is being generated','count':scraper_ins.files[uuid]}) 
+              if(os.path.exists(file_path)):
+                    return FileResponse(file_path,status_code=200) 
+              
+              else:return JSONResponse(status_code=404,content={'status':'File doesnt exist'})
+     else:return JSONResponse(status_code=401,content={'status':'Invalid Token Credentials'})
        
     
 
