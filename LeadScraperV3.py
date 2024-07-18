@@ -65,7 +65,6 @@ class LeadScraper():
             
         async with async_playwright() as playwright:  
             browser = await playwright.chromium.launch(args=args,proxy=self.proxy,headless=True) 
-            
             await asyncio.gather(*[self.fetch_search_results(await browser.new_context(user_agent=agent.random,viewport={'width':800,'height':1024})) for i in range(0,10)])
             
     async def send_json_to_webhook(self,url,niche,location,site,t,p,s,n):
@@ -88,21 +87,21 @@ class LeadScraper():
         writer = AsyncWriter(file)
         await writer.writerow(['username','email','following','followers','link','niche','location']) 
         await writer.writerows(data)
+        print('[WRITE]:',filename)
     
       
     async def fetch_search_results(self,context):
-
         page=await context.new_page()
-        
         await stealth_async(page)
+        
         while True:
             if not self.query_tasks.empty():      
               query=self.query_tasks.queue[0]
               counter = 0
               tries=20
               self.q= choice((
-                  f"site:{query[4]}  @gmail.com {query[2]} {query[3]} Followers @yahoo.com @icloud.com  @outlook.com",
-                    f"site:{query[4]}  '@gmail.com' '{query[2]}' '{query[3]}' 'Followers' '@yahoo.com' '@icloud.com'  '@outlook.com'"))                  
+                  f"site:{query[4]}  @gmail.com {query[2]} {query[3]} Followers Following @yahoo.com @icloud.com  @outlook.com",
+                  f"site:{query[4]}  '@gmail.com' '{query[2]}' '{query[3]}' 'Followers' Following '@yahoo.com' '@icloud.com'  '@outlook.com'"))                  
               self.pg=query[1]
               self.min=query[0]
               uid=query[6]
@@ -113,7 +112,7 @@ class LeadScraper():
                if counter == 20:
                    await context.clear_cookies()
                    counter = 0
-                 
+
                url =f'https://www.bing.com/search?first={self.pg}&count=50&q={self.q}&rdr=1' 
                try:
                 await page.goto(url)
@@ -124,6 +123,7 @@ class LeadScraper():
                    await asyncio.sleep(1)
                 await page.wait_for_load_state('load')  
                 await asyncio.sleep(2)
+                
                 soup = HTMLParser(await page.content(), 'html.parser').css('.b_algo')
                 for item in soup:
                     data_text = item.text()
@@ -141,7 +141,9 @@ class LeadScraper():
                     if email:
                         count += 1
                         email = following = email.group()
-                        if uid in self.files:self.files[uid].append((username,email,following,followers,link,query[2],query[3]))
+                        if uid in self.files:
+                            self.files[uid][0]+=1
+                            self.files[uid][1].append((username,email,following,followers,link,query[2],query[3]))
                         else:break
                     #else:self.data_.append((link.split('/')[-2], link, '', following, followers))              
                 self.count+= count
@@ -149,19 +151,16 @@ class LeadScraper():
                 else:tries-=1 
                 count = 0
                 counter += 1
-               except:pass
-                
+               except Exception as e:pass
               if(uid in self.files):
-               data=self.files.pop(uid)
-               self.query_tasks.get()
-               
+               data=self.files.pop(uid)[1]
+               self.query_tasks.get()  
                print(time.time()-self.ttime,self.count)
                self.count=0
                await self.write_results_to_csv(f'./files/{query[5]}_{query[6]}.csv',data)
-              
             else:await asyncio.sleep(1)
     def add(self,data): 
-            self.files[data[6]]=[]
+            self.files[data[6]]=[0,[]]
             self.ttime=time.time()
             self.query_tasks.put(data)                  
 
@@ -169,6 +168,6 @@ if(__name__=='__main__'):
    
    ls=LeadScraper( )
    uid=str(uuid.uuid4())
-   (ls.add([1000,1,'fitness','haldwani','instagram.com','test_token',uid]))
+   (ls.add([10,1,'fitness','haldwani','instagram.com','test_token',uid]))
    asyncio.run(ls.handler())
     

@@ -46,15 +46,15 @@ async def get(niche:str,location:str,token:str,min:int=10,start:int=0):
         
         if(token in tokens):
              tries=tokens[token]['n']
-             flag=False
              if(min>tries):min=tries
              elif(min<=0):return JSONResponse(status_code=400,content={'status':'param min should be greater than 0'})
              if(tries>0): 
                    uid=str(uuid.uuid4())
-                   print(f'http://localhost:8000/get_file?token=aabf3e2e-488f-4d63-8eae-df0b6f729f3d&uuid={uid}')
+                   print(f'http://localhost:8000/get_file?token=aabf3e2e-488f-4d63-8eae-df0b6f729f3d&uid={uid}')
                    scraper_ins.add((min,start,niche,location,'instagram.com',token,uid))         
-                   tries-=min
-                   return JSONResponse(status_code=200,content={'status':f'Added your query to the queue ','uuid':uid})                     
+                   tokens[token]['n']-=min
+                   return JSONResponse(status_code=200,content={'status':f'Added your query to the queue ','uuid':uid,'attempts_left':tokens[token]['n'],'target':min})                     
+       
         else:return JSONResponse(status_code=401,content={'status':'Invalid Token Credentials'}) 
         return JSONResponse(status_code=400,content={'status':'Invalid Query'})
 
@@ -63,8 +63,8 @@ async def get(token:str,uid:str):
      if(token in tokens):
               file_path=f'./files/{token}_{uid.replace('//','')}.csv'
               print(file_path)
-              if uuid in scraper_ins.files:
-                   JSONResponse(status_code=200,content={'status':'File is being generated','count':scraper_ins.files[uuid]}) 
+              if uid in scraper_ins.files:
+                    return JSONResponse(status_code=200,content={'status':'File is being generated','count':scraper_ins.files[uid][0]}) 
               if(os.path.exists(file_path)):
                     return FileResponse(file_path,status_code=200) 
               
