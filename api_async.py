@@ -43,7 +43,6 @@ async def get():
     
 @app.get("/add_queries")
 async def get(niche:str,location:str,token:str,min:int=10,start:int=0):
-        
         if(token in tokens):
              tries=tokens[token]['n']
              if(min>tries):min=tries
@@ -54,21 +53,19 @@ async def get(niche:str,location:str,token:str,min:int=10,start:int=0):
                    scraper_ins.add((min,start,niche,location,'instagram.com',token,uid))         
                    tokens[token]['n']-=min
                    return JSONResponse(status_code=200,content={'status':f'Added your query to the queue ','uuid':uid,'attempts_left':tokens[token]['n'],'target':min})                     
-       
         else:return JSONResponse(status_code=401,content={'status':'Invalid Token Credentials'}) 
         return JSONResponse(status_code=400,content={'status':'Invalid Query'})
 
 @app.get("/get_file")
 async def get(token:str,uid:str):
      if(token in tokens):
-              file_path=f'./files/{token}_{uid.replace('//','')}.csv'
-              print(file_path)
+              uid=uid.replace('//','')
               if uid in scraper_ins.files:
-                    return JSONResponse(status_code=200,content={'status':'File is being generated','count':scraper_ins.files[uid][0]}) 
-              if(os.path.exists(file_path)):
-                    return FileResponse(file_path,status_code=200) 
-              
+                    return JSONResponse(status_code=200,content={'status':'File is being generated','count':scraper_ins.files[uid][0],'requested':scraper_ins.files[uid][1]}) 
+              file_path=f'./files/{token}_{uid}.csv'
+              if(os.path.exists(file_path)):return FileResponse(file_path,status_code=200) 
               else:return JSONResponse(status_code=404,content={'status':'File doesnt exist'})
+              
      else:return JSONResponse(status_code=401,content={'status':'Invalid Token Credentials'})
        
     

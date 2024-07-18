@@ -153,14 +153,14 @@ class LeadScraper():
                 counter += 1
                except Exception as e:pass
               if(uid in self.files):
-               data=self.files.pop(uid)[1]
+               data=self.files.pop(uid)[2]
                self.query_tasks.get()  
                print(time.time()-self.ttime,self.count)
                self.count=0
                await self.write_results_to_csv(f'./files/{query[5]}_{query[6]}.csv',data)
             else:await asyncio.sleep(1)
     def add(self,data): 
-            self.files[data[6]]=[0,[]]
+            self.files[data[6]]=[0,data[0],[]]
             self.ttime=time.time()
             self.query_tasks.put(data)                  
 
