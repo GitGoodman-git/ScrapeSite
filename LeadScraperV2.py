@@ -127,7 +127,8 @@ class LeadScraper():
             return (pos,id)                
 
 if(__name__=='__main__'):
-   ls=LeadScraper("http://mxlraznr-rotate:cjyvyy6a20u0@p.webshare.io:80/")
+   ls=LeadScraper()
+   "http://mxlraznr-rotate:cjyvyy6a20u0@p.webshare.io:80/"
    print(ls.add([100,1,'fitness','haldwani','instagram.com','test_token']))
    asyncio.run(ls.handler())
     

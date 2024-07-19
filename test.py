@@ -1,5 +1,8 @@
 import requests
+import fake_useragent as fu
 
+agent=fu.UserAgent()
+    
 def send_request_21():
     url = 'http://localhost:8000/add_queries'
     params = {
@@ -26,10 +29,32 @@ def send_request_2():
     print(response.url)
     print(response.status_code)
     print(response.text)  
+
+headers={
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.5",
+    "Connection": "keep-alive",
+    "Upgrade-Insecure-Requests": "1",
+    'Accept-Encoding':'gzip, deflate, br, zstd',
+    'Cache-Control':'no-cache',
+    'Accept-Charset': 'utf-8',
+    
+    }
+    
+from bs4 import BeautifulSoup
+def send_request_3():
+    url='https://www.instagram.com/krishnamisra__/,fashion,dehradun'
+    headers['User-Agent']=agent.random
+    response = requests.get(url,headers=headers)
+    soup= BeautifulSoup(response.content)
+    print(response.url)
+    print(response.status_code)
+    print(soup.text)  
+    
 # Example usage:
 import time
 if __name__ == "__main__":
-    send_request_2()
+    send_request_3()
    # while True:
     # input()
      #send_request_2()

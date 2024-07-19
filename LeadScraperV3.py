@@ -34,7 +34,7 @@ args=[
         '--blink-settings=fonts=!',
         '--disable-javascript',
         "--high-dpi-support=0.50",
-        "--force-device-scale-factor=0.50"
+        "--force-device-scale-factor=0.20"
         ]
 headers={
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
@@ -64,8 +64,8 @@ class LeadScraper():
     async def handler(self):
             
         async with async_playwright() as playwright:  
-            browser = await playwright.chromium.launch(args=args,proxy=self.proxy,headless=True) 
-            await asyncio.gather(*[self.fetch_search_results(await browser.new_context(user_agent=agent.random,viewport={'width':800,'height':1024})) for i in range(0,10)])
+            browser = await playwright.chromium.launch(args=args,proxy=self.proxy,headless=False) 
+            await asyncio.gather(*[self.fetch_search_results(await browser.new_context(user_agent=agent.random,viewport={'width':800,'height':5024})) for i in range(0,10)])
             
     async def send_json_to_webhook(self,url,niche,location,site,t,p,s,n):
      data=dumps({'niche':niche,
@@ -99,14 +99,18 @@ class LeadScraper():
               query=self.query_tasks.queue[0]
               counter = 0
               tries=20
+
               self.q= choice((
                   f"site:{query[4]}  @gmail.com {query[2]} {query[3]} Followers Following @yahoo.com @icloud.com  @outlook.com",
                   f"site:{query[4]}  '@gmail.com' '{query[2]}' '{query[3]}' 'Followers' Following '@yahoo.com' '@icloud.com'  '@outlook.com'"))                  
+              
               self.pg=query[1]
               self.min=query[0]
               uid=query[6]
               self.count=0
+
               while self.count<self.min and tries and uid in self.files:
+               
                count = 0
                self.pg += 50
                if counter == 20:
@@ -114,6 +118,7 @@ class LeadScraper():
                    counter = 0
 
                url =f'https://www.bing.com/search?first={self.pg}&count=50&q={self.q}&rdr=1' 
+               
                try:
                 await page.goto(url)
                 await asyncio.sleep(3)
@@ -143,10 +148,11 @@ class LeadScraper():
                         email = following = email.group()
                         if uid in self.files:
                             self.files[uid][0]+=1
-                            self.files[uid][1].append((username,email,following,followers,link,query[2],query[3]))
+                            self.files[uid][2].append((username,email,following,followers,link,query[2],query[3]))
                         else:break
                     #else:self.data_.append((link.split('/')[-2], link, '', following, followers))              
                 self.count+= count
+                print(count,self.files[uid][0])
                 if(count):tries=3
                 else:tries-=1 
                 count = 0
