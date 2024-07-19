@@ -134,11 +134,9 @@ class LeadScraper():
                     data_text = item.text()
                     email = re.search(r'([A-Za-z0-9]+[.-_])*[A-Za-z0-9]+@[+A-Za-z0-9-]+(\.[A-Z|a-z]{2,})+', data_text)
                     link=''
-                    username=''
+                    username=re.search(r'@([A-Za-z0-9_.]+)\b(?!@)',data_text)
+                    username = (username.group()) if username else ""
                     link =item.css_first('a').attributes['href'] 
-                    try:username=link.split('/')[-2]
-                    except:pass
-                    
                     following = re.search(r'\b\d+[A-Z]*\s+Following\b', data_text)
                     following = (following.group())[:-9] if following else ""
                     followers = re.search(r'([\d,.]+[KM]?) Followers', data_text)
@@ -173,6 +171,6 @@ if(__name__=='__main__'):
    
    ls=LeadScraper( )
    uid=str(uuid.uuid4())
-   (ls.add([20,1,'fitness','haldwani','instagram.com','test_token',uid]))
+   (ls.add([1000,1,'fitness','haldwani','instagram.com','test_token',uid]))
    asyncio.run(ls.handler())
     
