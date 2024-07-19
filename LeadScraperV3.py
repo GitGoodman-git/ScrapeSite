@@ -166,10 +166,10 @@ class LeadScraper():
                 await page.wait_for_load_state('load')  
                 while True:
                  try:
-                    soup = HTMLParser(await page.content(), 'html.parser').css('.b_algo')
+                    items = HTMLParser(await page.content(), 'html.parser').css('.b_algo')
                     break
                  except: await asyncio.sleep(2)
-                self.count+= self.parse(soup,query[2],query[3])
+                self.count+= self.parse(items,uid,query[2],query[3])
                # print(self.count)
                except Exception as e:
                    print('Error:',traceback.format_exc())
@@ -185,7 +185,7 @@ class LeadScraper():
                await self.write_results_to_csv(f'./files/{query[5]}_{query[6]}.csv',data)
             else:await asyncio.sleep(1)
     
-    def parse(self,items,*args):
+    def parse(self,items,uid,*args):
                 count=0
                 for item in items:
                     data_text = item.css_first('.b_caption').text()
