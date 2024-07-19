@@ -34,7 +34,7 @@ args=[
         '--blink-settings=fonts=!',
         '--disable-javascript',
         "--high-dpi-support=0.50",
-        "--force-device-scale-factor=0.20"
+        "--force-device-scale-factor=0.10"
         ]
 headers={
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
@@ -65,7 +65,7 @@ class LeadScraper():
             
         async with async_playwright() as playwright:  
             browser = await playwright.chromium.launch(args=args,proxy=self.proxy,headless=False) 
-            await asyncio.gather(*[self.fetch_search_results(await browser.new_context(user_agent=agent.random,viewport={'width':800,'height':5024})) for i in range(0,10)])
+            await asyncio.gather(*[self.fetch_search_results(await browser.new_context(user_agent=agent.random,viewport={'width':800,'height':10024})) for i in range(0,10)])
             
     async def send_json_to_webhook(self,url,niche,location,site,t,p,s,n):
      data=dumps({'niche':niche,
@@ -152,7 +152,6 @@ class LeadScraper():
                         else:break
                     #else:self.data_.append((link.split('/')[-2], link, '', following, followers))              
                 self.count+= count
-                print(count,self.files[uid][0])
                 if(count):tries=3
                 else:tries-=1 
                 count = 0
@@ -174,6 +173,6 @@ if(__name__=='__main__'):
    
    ls=LeadScraper( )
    uid=str(uuid.uuid4())
-   (ls.add([10,1,'fitness','haldwani','instagram.com','test_token',uid]))
+   (ls.add([1000,1,'fitness','haldwani','instagram.com','test_token',uid]))
    asyncio.run(ls.handler())
     
