@@ -42,7 +42,7 @@ async def get():
     return JSONResponse({'status':'working..'},status_code=200)
     
 @app.get("/add_queries")
-async def get(niche:str,location:str,token:str,country_code:str,min:int=10,start:int=0):
+async def get(niche:str,location:str,token:str,country_code:str=None,min:int=10,start:int=0,tlim:int=0):
         if(token in tokens):
              tries=tokens[token]['n']
              if(min>tries):min=tries
@@ -50,7 +50,7 @@ async def get(niche:str,location:str,token:str,country_code:str,min:int=10,start
              if(tries>0): 
                    uid=str(uuid.uuid4())
                    print(f'http://localhost:8000/get_file?token=aabf3e2e-488f-4d63-8eae-df0b6f729f3d&uid={uid}')
-                   scraper_ins.add((min,start,niche,location,'instagram.com',token,uid,country_code))         
+                   scraper_ins.add((min,start,niche,location,'instagram.com',token,uid,country_code,tlim))         
                    tokens[token]['n']-=min
                    return JSONResponse(status_code=200,content={'status':f'Added your query to the queue ','uuid':uid,'attempts_left':tokens[token]['n'],'target':min})                     
         else:return JSONResponse(status_code=401,content={'status':'Invalid Token Credentials'}) 
@@ -61,7 +61,10 @@ async def get(token:str,uid:str):
      if(token in tokens):
               uid=uid.replace('//','')
               if uid in scraper_ins.files:
-                    return JSONResponse(status_code=200,content={'status':'File is being generated','count':scraper_ins.files[uid][0],'requested':scraper_ins.files[uid][1]}) 
+                    return JSONResponse(status_code=200,content={'status':'File is being generated',
+                                                                 'count':scraper_ins.files[uid][0],
+                                                                 'requested':scraper_ins.files[uid][1],
+                                                                 'total':scraper_ins.files[uid][3],'time_taken':scraper_ins.files[uid][3]}) 
               file_path=f'./files/{token}_{uid}.csv'
               if(os.path.exists(file_path)):return FileResponse(file_path,status_code=200) 
               else:return JSONResponse(status_code=404,content={'status':'File doesnt exist'})
@@ -71,7 +74,7 @@ async def get(token:str,uid:str):
     
 
 
-if __name__ == "__main__":
+#if __name__ == "__main__":
 
- uvicorn.run(app, host="0.0.0.0", port=8000)
+ #uvicorn.run(app, host="0.0.0.0", port=8000)
     
