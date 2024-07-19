@@ -143,7 +143,7 @@ class LeadScraper():
               self.count=0
               self.ctime=0
               while self.count<self.min and uid in self.files and tries and self.tlim>self.ctime:
-               url =f'https://www.bing.com/search?first={self.pg}&count=50&cc={query[7]}&q={self.q}&rdr=1'
+               url =f'https://www.bing.com/search?first={self.pg}&count=50&cc={query[7]}&mkt={query[7]}&q={self.q}&rdr=1'
                
                count = 0
                if counter == 20:
@@ -169,7 +169,6 @@ class LeadScraper():
                  except:await asyncio.sleep(2)
                 self.pg+=len(items)
                 count=self.parse(items,uid,query[2],query[3])
-                self.count+=count 
                 if(count):tries=6
                 else:tries-=1 
                 counter += 1 
@@ -218,8 +217,8 @@ class LeadScraper():
                             self.files[uid][2][username]=data
                          else:break
                     self.d.append((username,email,following,followers,link,*args))
-                    
-                self.files[uid][0]+=count   
+                self.count+=count     
+                self.files[uid][4]+=count   
                 return count        
            
     def add(self,data): 
