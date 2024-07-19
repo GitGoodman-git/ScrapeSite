@@ -1,6 +1,4 @@
-import aiohttp as aio
 import asyncio
-from random import choice,randint
 from selectolax.parser import HTMLParser
 import re,aiofiles
 import time
@@ -99,20 +97,20 @@ class LeadScraper():
             browser = await playwright.chromium.launch(args=args,proxy=self.proxy,headless=True) 
             await asyncio.gather(*[self.fetch_search_results(await browser.new_context(user_agent=agent.random,viewport={'width':3000,'height':10000})) for i in range(0,self.up+2)])
             
-    async def send_json_to_webhook(self,url,niche,location,site,t,p,s,n):
-     data=dumps({'niche':niche,
-                 'location':location,
-                 'site':site,
-                 'time':t,
-                 '_pos':p,
-                 '_start':s,
-                 '_n':n,
-                 'data':self.data[:n]                 
-                 })
+    # async def send_json_to_webhook(self,url,niche,location,site,t,p,s,n):
+    #  data=dumps({'niche':niche,
+    #              'location':location,
+    #              'site':site,
+    #              'time':t,
+    #              '_pos':p,
+    #              '_start':s,
+    #              '_n':n,
+    #              'data':self.data[:n]                 
+    #              })
      
-     async with aio.ClientSession() as session:
-        async with session.post(url, json=data) as response:
-          print(response.status)
+    #  async with aio.ClientSession() as session:
+    #     async with session.post(url, json=data) as response:
+    #       print(response.status)
     
     async def write_results_to_csv(self,filename,data):
      
