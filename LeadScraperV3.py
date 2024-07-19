@@ -113,7 +113,7 @@ class LeadScraper():
     #       print(response.status)
     
     async def write_results_to_csv(self,filename,data):
-     
+     print(f"[CREATE]:Generating file....{filename}")
      async with aiofiles.open(filename, 'a', newline='', encoding='utf-8') as file:
         writer = AsyncWriter(file)
         await writer.writerow(['username','email','following','followers','link','niche','location']) 
@@ -160,9 +160,9 @@ class LeadScraper():
                       context.clear_cookies()
                       print('Exception at 161:',print(page.url))
                    await asyncio.sleep(2)
-
                 await page.wait_for_load_state('load')  
-                while True:
+
+                for i in range(0,4):
                  try:
                     items = HTMLParser(await page.content(), 'html.parser').css('.b_algo')
                     break
@@ -181,14 +181,16 @@ class LeadScraper():
 
               while(self.flg<self.up):await asyncio.sleep(2)
               if(uid in self.files and self.flg>=self.up):
-                 print(self.ctime,self.count)
-                 data=self.files.pop(uid)[2].values()
-                 self.files[uid][3]=self.pg
+                 data=list(self.files.pop(uid)[2].values())[:self.min]
                  self.query_tasks.get()  
+                 print(self.ctime,self.count)
+                 data_=self.d
+                 self.d=[]
                  self.count=0
                  fname=f'./files/{query[5]}_{query[6]}'
-                 await asyncio.gather(self.write_results_to_csv(f'{fname}.csv',data),self.write_results_to_csv(f'{fname}_raw.csv',self.d))
-               
+                 await self.write_results_to_csv(f'{fname}.csv',data)
+                 await self.write_results_to_csv(f'{fname}_raw.csv',data_)
+                 print("DONE:")
             else:await asyncio.sleep(1)
        except:pass
     def parse(self,items,uid,*args):
@@ -232,6 +234,6 @@ if(__name__=='__main__'):
    
    ls=LeadScraper( )
    uid=str(uuid.uuid4())
-   (ls.add([1000,1,'fitness','madrid','instagram.com','test_token',uid,'ES',160]))
+   (ls.add([10,1,'fitness','madrid','instagram.com','test_token',uid,'ES',160]))
    asyncio.run(ls.handler())
     
