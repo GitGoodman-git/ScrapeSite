@@ -42,7 +42,7 @@ async def get():
     return JSONResponse({'status':'working..'},status_code=200)
     
 @app.get("/add_queries")
-async def get(niche:str,location:str,token:str,min:int=10,start:int=0):
+async def get(niche:str,location:str,token:str,country_code:str,min:int=10,start:int=0):
         if(token in tokens):
              tries=tokens[token]['n']
              if(min>tries):min=tries
@@ -50,7 +50,7 @@ async def get(niche:str,location:str,token:str,min:int=10,start:int=0):
              if(tries>0): 
                    uid=str(uuid.uuid4())
                    print(f'http://localhost:8000/get_file?token=aabf3e2e-488f-4d63-8eae-df0b6f729f3d&uid={uid}')
-                   scraper_ins.add((min,start,niche,location,'instagram.com',token,uid))         
+                   scraper_ins.add((min,start,niche,location,'instagram.com',token,uid,country_code))         
                    tokens[token]['n']-=min
                    return JSONResponse(status_code=200,content={'status':f'Added your query to the queue ','uuid':uid,'attempts_left':tokens[token]['n'],'target':min})                     
         else:return JSONResponse(status_code=401,content={'status':'Invalid Token Credentials'}) 
