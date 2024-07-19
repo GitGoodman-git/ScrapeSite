@@ -141,11 +141,11 @@ class LeadScraper():
                     
                     following = re.search(r'\b\d+[A-Z]*\s+Following\b', data_text)
                     following = (following.group())[:-9] if following else ""
-                    followers = re.search(r'\b\d+[A-Z]*\s+Followers\b', data_text)
+                    followers = re.search(r'([\d,.]+[KM]?) Followers', data_text)
                     followers = (followers.group())[:-9] if followers else ""
                     if email:
                         count += 1
-                        email = following = email.group()
+                        email = email.group()
                         if uid in self.files:
                             self.files[uid][0]+=1
                             self.files[uid][2].append((username,email,following,followers,link,query[2],query[3]))
@@ -173,6 +173,6 @@ if(__name__=='__main__'):
    
    ls=LeadScraper( )
    uid=str(uuid.uuid4())
-   (ls.add([1000,1,'fitness','haldwani','instagram.com','test_token',uid]))
+   (ls.add([20,1,'fitness','haldwani','instagram.com','test_token',uid]))
    asyncio.run(ls.handler())
     
