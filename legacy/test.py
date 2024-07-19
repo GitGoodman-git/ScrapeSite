@@ -40,7 +40,6 @@ headers={
     'Accept-Charset': 'utf-8',
     
     }
-    
 from bs4 import BeautifulSoup
 def send_request_3():
     url='https://www.instagram.com/krishnamisra__/,fashion,dehradun'
@@ -54,7 +53,22 @@ def send_request_3():
 # Example usage:
 import time
 if __name__ == "__main__":
-    send_request_3()
+   import re
+   data=[
+    "https://www.instagram.com/sabamansoori028gmail.com5/followers",
+    "https://www.instagram.com/rashidrashid1716gmail.com9/followers",
+    "https://www.instagram.com/arevaloian748gmail.com1/followers",
+    
+    "https://www.instagram.com/followers",
+    "https://www.instagram.com/saneali1977aligmail.com7/following"
+
+
+   ]
+   for t in data:
+       
+    pattern = r'https:\/\/www\.instagram\.com\/([a-zA-Z0-9._-]+)(?=\/(?:reel|p|reels|followers|follower|following)(\/?)$)'
+    r=re.search(pattern,t)
+    if r:print(t,r.group(1))
    # while True:
     # input()
      #send_request_2()

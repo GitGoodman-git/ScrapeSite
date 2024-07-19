@@ -12,6 +12,7 @@ from fake_useragent import UserAgent
 from playwright.async_api import async_playwright
 from playwright_stealth import stealth_async
 import urllib.parse as up
+import traceback
 import queue
 proxy = {
     "server": os.environ.get('PROXY_SERVER'),
@@ -34,7 +35,34 @@ args=[
         '--blink-settings=fonts=!',
         '--disable-javascript',
         "--high-dpi-support=0.50",
-        "--force-device-scale-factor=0.10"
+        "--force-device-scale-factor=0.10",
+        
+        # '--disable-dev-shm-usage',
+        # '--disable-background-timer-throttling',
+        # '--disable-backgrounding-occluded-windows',
+        # '--disable-breakpad',
+        # '--disable-client-side-phishing-detection',
+        # '--disable-component-extensions-with-background-pages',
+        # '--disable-default-apps',
+        # '--disable-extensions',
+        # '--disable-features=site-per-process',
+        # '--disable-hang-monitor',
+        # '--disable-ipc-flooding-protection',
+        # '--disable-popup-blocking',
+        # '--disable-prompt-on-repost',
+        # '--disable-renderer-backgrounding',
+        # '--disable-sync',
+        # '--no-sandbox',
+        # '--disable-web-security',
+        # '--disable-accelerated-2d-canvas',
+        # '--disable-gpu',
+        # '--disable-software-rasterizer',
+        # '--disable-webgl',
+         '--disable-notifications',
+        # '--disable-infobars',
+        # '--disable-background-networking',
+        # '--metrics-recording-only',
+        # '--no-first-run'
         ]
 headers={
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
@@ -88,21 +116,22 @@ class LeadScraper():
         await writer.writerow(['username','email','following','followers','link','niche','location']) 
         await writer.writerows(data)
         print('[WRITE]:',filename)
-    
-      
+    async def scrape_insta(self,page,link):
+         await page.goto(link)
+         #s2='section main section ul'
+       
     async def fetch_search_results(self,context):
         page=await context.new_page()
         await stealth_async(page)
-        
+        print('[LOADED]:Context')
         while True:
             if not self.query_tasks.empty():      
               query=self.query_tasks.queue[0]
               counter = 0
               tries=20
 
-              self.q= choice((
-                  f"site:{query[4]}  @gmail.com {query[2]} {query[3]} Followers Following @yahoo.com @icloud.com  @outlook.com",
-                  f"site:{query[4]}  '@gmail.com' '{query[2]}' '{query[3]}' 'Followers' Following '@yahoo.com' '@icloud.com'  '@outlook.com'"))                  
+              self.q=f"site:{query[4]}  @gmail.com {query[2]} {query[3]} Followers Following @yahoo.com @icloud.com  @outlook.com"
+                  #f"site:{query[4]}  '@gmail.com' '{query[2]}' '{query[3]}' 'Followers' Following '@yahoo.com' '@icloud.com'  '@outlook.com'"))                  
               
               self.pg=query[1]
               self.min=query[0]
@@ -121,49 +150,76 @@ class LeadScraper():
                
                try:
                 await page.goto(url)
-                await asyncio.sleep(3)
+                await asyncio.sleep(5)
                 if not await page.query_selector('.b_algo'):
-                   await page.click('.b_searchbox') 
-                   await page.keyboard.press('Enter') 
-                   await asyncio.sleep(1)
+                   await asyncio.sleep(2)
+                   try:
+                    await page.click('input.b_searchbox') 
+                    await page.keyboard.press('Enter') 
+                    await asyncio.sleep(1)
+                   except Exception as e:
+                      print('Exception at 161:',e)
+                      break
+               # await page.wait_for_navigation(wait_until='networkidle')
                 await page.wait_for_load_state('load')  
                 await asyncio.sleep(2)
-                
-                soup = HTMLParser(await page.content(), 'html.parser').css('.b_algo')
-                for item in soup:
-                    data_text = item.text()
-                    email = re.search(r'([A-Za-z0-9]+[.-_])*[A-Za-z0-9]+@[+A-Za-z0-9-]+(\.[A-Z|a-z]{2,})+', data_text)
-                    link=''
-                    username=re.search(r'@([A-Za-z0-9_.]+)\b(?!@)',data_text)
-                    username = (username.group()) if username else ""
-                    link =item.css_first('a').attributes['href'] 
-                    following = re.search(r'\b\d+[A-Z]*\s+Following\b', data_text)
-                    following = (following.group())[:-9] if following else ""
-                    followers = re.search(r'([\d,.]+[KM]?) Followers', data_text)
-                    followers = (followers.group())[:-9] if followers else ""
-                    if email:
-                        count += 1
-                        email = email.group()
-                        if uid in self.files:
-                            self.files[uid][0]+=1
-                            self.files[uid][2].append((username,email,following,followers,link,query[2],query[3]))
-                        else:break
-                    #else:self.data_.append((link.split('/')[-2], link, '', following, followers))              
-                self.count+= count
-                if(count):tries=3
-                else:tries-=1 
-                count = 0
-                counter += 1
-               except Exception as e:pass
+                while True:
+                 try:
+                    soup = HTMLParser(await page.content(), 'html.parser').css('.b_algo')
+                    break
+                 except: await asyncio.sleep(2)
+                #else:self.data_.append((link.split('/')[-2], link, '', following, followers))              
+                self.count+= self.parse(soup,query[2],query[3])
+               # print(self.count)
+               except Exception as e:
+                   print('Error:',e)
+               if(count):tries=3
+               else:tries-=1 
+               count = 0
+               counter += 1
               if(uid in self.files):
-               data=self.files.pop(uid)[2]
+               data=self.files.pop(uid)[2].values()
                self.query_tasks.get()  
                print(time.time()-self.ttime,self.count)
                self.count=0
                await self.write_results_to_csv(f'./files/{query[5]}_{query[6]}.csv',data)
             else:await asyncio.sleep(1)
+    
+    def parse(self,items,*args):
+                count=0
+                for item in items:
+                    data_text = item.css_first('.b_caption').text()
+                    email = re.search(r'([A-Za-z0-9]+[.-_])*[A-Za-z0-9]+@[+A-Za-z0-9-]+(\.[A-Z|a-z]{2,})+', data_text)
+                    
+                    link =item.css_first('div.b_attribution cite')
+                    link=link.text() if link else '' 
+                    pattern = r'https:\/\/www\.instagram\.com\/([a-zA-Z0-9._-]+)(:\/(reel|p|reels|followers|follower|following).*)?\/?'
+                    username=re.search(pattern,link)
+                    
+                    if username:
+                          username=username.group(1)
+                          if username in ('reel','p','reels','followers','follower','following'):username=''
+
+                    if (email and username) or username in self.files[uid][2] :
+                        email = email.group().strip()
+
+                        following = re.search(r'(\d{1,3}(?:,\d{3})*(?:\.\d+)?[KM]?) Following', data_text)
+                        following = (following.group(1)).replace('K','000').replace('M','000000').replace(',','') if following else ''
+                        followers = re.search(r'(\d{1,3}(?:,\d{3})*(?:\.\d+)?[KM]?) Followers', data_text)
+                        followers = (followers.group(1)).replace('K','000').replace('M','000000').replace(',','') if followers else ''
+                        data=(username,email,following,followers,link,*args)
+                        if username in self.files[uid][2]:
+                            self.files[uid][2][username]=tuple(val1 if val1 else val2 for val1, val2 in zip(self.files[uid][2][username],data))
+                              
+                        elif uid in self.files:
+                            count += 1
+                            self.files[uid][0]+=1
+                            self.files[uid][2][email]=data
+                        else:break
+                return count        
+           
     def add(self,data): 
-            self.files[data[6]]=[0,data[0],[]]
+            self.files[data[6]]=[0,data[0],{}]
             self.ttime=time.time()
             self.query_tasks.put(data)                  
 
