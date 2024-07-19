@@ -42,7 +42,7 @@ async def get():
     return JSONResponse({'status':'working..'},status_code=200)
     
 @app.get("/add_queries")
-async def get(niche:str,location:str,token:str,country_code:str=None,min:int=10,start:int=0,tlim:int=0):
+async def get(niche:str,location:str,token:str,country_code:str=None,min:int=10,start:int=0,tlim:int=120):
         if(token in tokens):
              tries=tokens[token]['n']
              if(min>tries):min=tries
@@ -74,7 +74,7 @@ async def get(token:str,uid:str):
     
 
 
-#if __name__ == "__main__":
+if __name__ == "__main__":
 
- #uvicorn.run(app, host="0.0.0.0", port=8000)
+ uvicorn.run(app, host="0.0.0.0", port=8000)
     

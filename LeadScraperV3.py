@@ -164,7 +164,11 @@ class LeadScraper():
                    await asyncio.sleep(2)
 
                 await page.wait_for_load_state('load')  
-                items = HTMLParser(await page.content(), 'html.parser').css('.b_algo')
+                while True:
+                 try:
+                    items = HTMLParser(await page.content(), 'html.parser').css('.b_algo')
+                    break
+                 except:await asyncio.sleep(2)
                 self.pg+=len(items)
                 count=self.parse(items,uid,query[2],query[3])
                 self.count+=count 
