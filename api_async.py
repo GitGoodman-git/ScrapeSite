@@ -62,9 +62,10 @@ async def get(token:str,uid:str):
               uid=uid.replace('//','')
               if uid in scraper_ins.files:
                     return JSONResponse(status_code=200,content={'status':'File is being generated',
-                                                                 'count':scraper_ins.files[uid][0],
-                                                                 'requested':scraper_ins.files[uid][1],
-                                                                 'total':scraper_ins.files[uid][3],'time_taken':scraper_ins.files[uid][3]}) 
+                                                                 'useful_count':scraper_ins.files[uid][0],
+                                                                 'requested_count':scraper_ins.files[uid][1],
+                                                                 'entries_found':scraper_ins.files[uid][3],
+                                                                 'time_passed':scraper_ins.files[uid][3]}) 
               file_path=f'./files/{token}_{uid}.csv'
               if(os.path.exists(file_path)):return FileResponse(file_path,status_code=200) 
               else:return JSONResponse(status_code=404,content={'status':'File doesnt exist'})
