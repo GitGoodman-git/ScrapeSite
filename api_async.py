@@ -42,7 +42,7 @@ async def get():
     return JSONResponse({'status':'working..'},status_code=200)
     
 @app.get("/add_queries")
-async def get(niche:str,location:str,token:str,country_code:str=None,min:int=10,start:int=0,tlim:int=120):
+async def get(token:str,country_code:str=None,niche:str=None,location:str='World',min:int=10,start:int=0,tlim:int=120):
         if(token in tokens):
              tries=tokens[token]['n']
              if(min>tries):min=tries
@@ -53,8 +53,9 @@ async def get(niche:str,location:str,token:str,country_code:str=None,min:int=10,
                    scraper_ins.add((min,start,niche,location,'instagram.com',token,uid,country_code,tlim))         
                    tokens[token]['n']-=min
                    return JSONResponse(status_code=200,content={'status':f'Added your query to the queue ','uuid':uid,'attempts_left':tokens[token]['n'],'target':min})                     
+             else :return JSONResponse(status_code=410,content={'status':'No of alloted attempts for your token exhausted'}) 
         else:return JSONResponse(status_code=401,content={'status':'Invalid Token Credentials'}) 
-        return JSONResponse(status_code=400,content={'status':'Invalid Query'})
+        
 
 @app.get("/get_file")
 async def get(token:str,uid:str):
