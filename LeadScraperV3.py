@@ -11,8 +11,7 @@ import uuid
 from fake_useragent import UserAgent
 from playwright.async_api import async_playwright
 from playwright_stealth import stealth_async
-import urllib.parse as up
-import traceback
+
 import queue
 proxy = {
     "server": os.environ.get('PROXY_SERVER'),
@@ -35,7 +34,7 @@ args=[
         '--blink-settings=fonts=!',
         '--disable-javascript',
         "--high-dpi-support=0.50",
-        "--force-device-scale-factor=0.10",
+        "--force-device-scale-factor=0.5",
         
         # '--disable-dev-shm-usage',
         # '--disable-background-timer-throttling',
@@ -58,12 +57,14 @@ args=[
         # '--disable-gpu',
         # '--disable-software-rasterizer',
         # '--disable-webgl',
-         '--disable-notifications',
+        # '--disable-notifications',
         # '--disable-infobars',
         # '--disable-background-networking',
         # '--metrics-recording-only',
         # '--no-first-run'
+
         ]
+import utils
 headers={
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
     "Accept-Language": "en-US,en;q=0.5",
@@ -93,7 +94,7 @@ class LeadScraper():
             
         async with async_playwright() as playwright:  
             browser = await playwright.chromium.launch(args=args,proxy=self.proxy,headless=True) 
-            await asyncio.gather(*[self.fetch_search_results(await browser.new_context(user_agent=agent.random,viewport={'width':800,'height':10024})) for i in range(0,10)])
+            await asyncio.gather(*[self.fetch_search_results(await browser.new_context(user_agent=agent.random,viewport={'width':3000,'height':7000})) for i in range(0,10)])
             
     async def send_json_to_webhook(self,url,niche,location,site,t,p,s,n):
      data=dumps({'niche':niche,
@@ -130,9 +131,9 @@ class LeadScraper():
               counter = 0
               tries=20
 
-              self.q=f"site:{query[4]}  @gmail.com {query[2]} {query[3]} Followers Following @yahoo.com @icloud.com  @outlook.com"
+              self.q=f"site:{query[4]}   {query[2]} based on {query[3]}  @gmail.com @yahoo.com @icloud.com  @outlook.com"
                   #f"site:{query[4]}  '@gmail.com' '{query[2]}' '{query[3]}' 'Followers' Following '@yahoo.com' '@icloud.com'  '@outlook.com'"))                  
-              
+              if(query[7]):await utils.geolocate(page,query[7])
               self.pg=query[1]
               self.min=query[0]
               uid=query[6]
@@ -146,7 +147,7 @@ class LeadScraper():
                    await context.clear_cookies()
                    counter = 0
 
-               url =f'https://www.bing.com/search?first={self.pg}&count=50&q={self.q}&rdr=1' 
+               url =f'https://www.bing.com/search?offset={self.pg}&count=50&cc={query[7]}&q={self.q}&rdr=1' 
                
                try:
                 await page.goto(url)
@@ -154,11 +155,10 @@ class LeadScraper():
                 if not await page.query_selector('.b_algo'):
                    await asyncio.sleep(2)
                    try:
-                    await page.click('input.b_searchbox') 
-                    await page.keyboard.press('Enter') 
+                    await page.click('#sb_form_go') 
                     await asyncio.sleep(1)
                    except Exception as e:
-                      print('Exception at 161:',e)
+                      print('Exception at 161:',print(page.url))
                       break
                # await page.wait_for_navigation(wait_until='networkidle')
                 await page.wait_for_load_state('load')  
@@ -202,7 +202,6 @@ class LeadScraper():
 
                     if (email and username) or username in self.files[uid][2] :
                         email = email.group().strip()
-
                         following = re.search(r'(\d{1,3}(?:,\d{3})*(?:\.\d+)?[KM]?) Following', data_text)
                         following = (following.group(1)).replace('K','000').replace('M','000000').replace(',','') if following else ''
                         followers = re.search(r'(\d{1,3}(?:,\d{3})*(?:\.\d+)?[KM]?) Followers', data_text)
@@ -227,6 +226,6 @@ if(__name__=='__main__'):
    
    ls=LeadScraper( )
    uid=str(uuid.uuid4())
-   (ls.add([1000,1,'fitness','haldwani','instagram.com','test_token',uid]))
+   (ls.add([1000,1,'fitness','madrid','instagram.com','test_token',uid,'ES']))
    asyncio.run(ls.handler())
     
