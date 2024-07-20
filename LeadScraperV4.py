@@ -132,26 +132,23 @@ class LeadScraper():
               await page.goto(url)
               await page.evaluate('document.body.style.zoom = "150%"')
 
-              while self.count<self.min and uid in self.files and tries and self.tlim>self.ctime and self.pg<2*self.min:
-                    count=0
+              while self.count<self.min and uid in self.files and tries and self.tlim>self.ctime :
+                
                     try:  
                         next=page.locator('a[title="Next page"]')
                         flag=True
                         for i in range(0,3): 
                          try:
                             await next.wait_for(state='attached',timeout=12000)
-                            await asyncio.sleep(1)
+                            await asyncio.sleep(4)
                             items = HTMLParser(await page.content(), 'html.parser').css('.b_algo')
                             self.pg+=len(items)
-                            count=self.parse(items,uid,query[2],query[3])  
-                            tries=3 if count else tries-1
+                            self.parse(items,uid,query[2],query[3])  
                             flag=False
-                         except TimeoutError as e:
+                         except Exception as e:
                             print("[ERROR]:timed out loading next button...")
-                            await page.reload()
-                            
+                            await page.reload()    
                         if flag:
-                            tries-=1
                             next=re.sub(r"first=\d+",f'first={self.pg}',page.url())                        
                         
                         print(self.count,self.pg)  
@@ -164,6 +161,7 @@ class LeadScraper():
                     except Exception as e:print('Error:',traceback.format_exc())
                
               self.flg+=1
+              await context.clear_cookies()
               while(self.flg<self.up):await asyncio.sleep(2)
               if(uid in self.files and self.flg>=self.up):
                  data=list(self.files.pop(uid)[2].values())[:self.min]
@@ -222,6 +220,6 @@ if(__name__=='__main__'):
    
    ls=LeadScraper( )
    uid=str(uuid.uuid4())
-   (ls.add([10,1,'fitness','madrid','instagram.com','test_token',uid,'ES',160]))
+   (ls.add([100,1,'fitness','madrid','instagram.com','test_token',uid,'ES',160]))
    asyncio.run(ls.handler())
     
