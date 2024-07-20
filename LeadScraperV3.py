@@ -186,7 +186,7 @@ class LeadScraper():
                  self.query_tasks.get()  
                  print(self.ctime,self.count)
                  data=self.files.pop(uid)[2].values()
-                 self.files[uid][3]=self.pg
+                 
                  self.query_tasks.get()  
                  self.count=0
                  self.flg=0
