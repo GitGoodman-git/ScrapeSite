@@ -87,7 +87,7 @@ class LeadScraper():
         self.pg=1
         self.flg=0
         self.query_tasks=queue.Queue()
-        self.up=8
+        self.up=1
 
         self.d=[]
         
@@ -95,7 +95,7 @@ class LeadScraper():
             
         async with async_playwright() as playwright:  
             browser = await playwright.chromium.launch(args=args,proxy=self.proxy,headless=True) 
-            await asyncio.gather(*[self.fetch_search_results(await browser.new_context(user_agent=agent.random,viewport={'width':1000,'height':10000})) for i in range(0,self.up+2)])
+            await asyncio.gather(*[self.fetch_search_results(await browser.new_context(user_agent=agent.random,viewport={'width':1000,'height':10000})) for i in range(0,self.up)])
             
     # async def send_json_to_webhook(self,url,niche,location,site,t,p,s,n):
     #  data=dumps({'niche':niche,
@@ -170,7 +170,6 @@ class LeadScraper():
                     break
                  except:await asyncio.sleep(2)
                 count=self.parse(items,uid,query[2],query[3])
-                self.count+=count
                 print(count,self.count,self.pg) 
                 if(count):tries=3
                 else:tries-=1 
@@ -185,12 +184,14 @@ class LeadScraper():
               if(uid in self.files and self.flg>=self.up):
                  data=list(self.files.pop(uid)[2].values())[:self.min]
                  self.query_tasks.get()  
+                 print(self.ctime,self.count)
+
                  data_=self.data
                  self.count=0
                  self.flg=0
                  self.data=[]
                  fname=f'./files/{query[5]}_{query[6]}'
-                 print(self.ctime,self.count)
+                 
                  await asyncio.gather(self.write_results_to_csv(f'{fname}.csv',data),self.write_results_to_csv(f'{fname}.csv',data))
                  await asyncio.gather(self.write_results_to_csv(f'{fname}.csv',data),self.write_results_to_csv(f'{fname}_raw.csv',data_))
                
@@ -211,12 +212,14 @@ class LeadScraper():
                     followers = re.search(r'(\d{1,3}(?:,\d{3})*(?:\.\d+)?[KM]?) Followers', data_text)
                     followers = (followers.group(1)).replace('K','000').replace('M','000000').replace(',','') if followers else ''
                     username=username.group(1) if username else None     
+                    if self.count>self.min:return 0
                     if username in ('reel','p','reels','followers','follower','following'):username=None  
                     data=(username,email,following,followers,link,*args)
                     if email and username and followers:                   
                      if  username not in self.files[uid][2]:
                          self.files[uid][2][username]=data
                          count += 1
+                         self.count+=1
                     self.data.append(data)  
                 self.files[uid][0]+=count   
                 return count        
