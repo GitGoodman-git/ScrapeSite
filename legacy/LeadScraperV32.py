@@ -1,6 +1,4 @@
-import aiohttp as aio
 import asyncio
-from random import choice,randint
 from selectolax.parser import HTMLParser
 import re,aiofiles
 import time
@@ -12,8 +10,10 @@ import traceback
 from fake_useragent import UserAgent
 from playwright.async_api import async_playwright
 from playwright_stealth import stealth_async
-
+import playwright
 import queue
+from random import choice
+    
 proxy = {
     "server": os.environ.get('PROXY_SERVER'),
     "username":os.environ.get('USER_NAME'),
@@ -35,7 +35,7 @@ args=[
         '--blink-settings=fonts=!',
         '--disable-javascript',
         "--high-dpi-support=0.20",
-        "--force-device-scale-factor=1",
+        "--force-device-scale-factor=0.5",
         
         '--disable-dev-shm-usage',
         '--disable-background-timer-throttling',
@@ -89,32 +89,23 @@ class LeadScraper():
         self.pg=1
         self.flg=0
         self.query_tasks=queue.Queue()
-        
+        self.up=4
+
+        self.d=[]
         
     async def handler(self):
             
+       
         async with async_playwright() as playwright:  
-            browser = await playwright.chromium.launch(args=args,proxy=self.proxy,headless=False) 
-            await asyncio.gather(*[self.fetch_search_results(await browser.new_context(user_agent=agent.random,viewport={'width':600,'height':700})) for i in range(0,10)])
             
-    async def send_json_to_webhook(self,url,niche,location,site,t,p,s,n):
-     data=dumps({'niche':niche,
-                 'location':location,
-                 'site':site,
-                 'time':t,
-                 '_pos':p,
-                 '_start':s,
-                 '_n':n,
-                 'data':self.data[:n]                 
-                 })
-     
-     async with aio.ClientSession() as session:
-        async with session.post(url, json=data) as response:
-          print(response.status)
+            browser = await playwright.chromium.launch(args=args,proxy=self.proxy,headless=False) 
+            await asyncio.gather(*[self.fetch_search_results(await browser.new_context(user_agent=agent.random,viewport={'width':4*choice([400,600,800,900,1200]),'height':3*choice([700,600,900,800])})) for i in range(0,10)])
+
+            
     
     async def write_results_to_csv(self,filename,data):
-     
-     async with aiofiles.open(filename, 'a', newline='', encoding='utf-8') as file:
+     print(f"[CREATE]:Generating file....{filename}")
+     async with aiofiles.open(filename, 'w', newline='', encoding='utf-8') as file:
         writer = AsyncWriter(file)
         await writer.writerow(['username','email','following','followers','link','niche','location']) 
         await writer.writerows(data)
@@ -124,103 +115,109 @@ class LeadScraper():
          #s2='section main section ul'
        
     async def fetch_search_results(self,context):
+       try: 
         page=await context.new_page()
         await stealth_async(page)
         print('[LOADED]:Context')
+        pg=self.pg
+        self.pg+=10
         while True:
             if not self.query_tasks.empty():      
               query=self.query_tasks.queue[0]
               counter = 0
               tries=6
-
-              self.q=f"Followers Following  Spain   @gmail.com OR @yahoo.com OR @icloud.com   \'{query[2]} based on {query[3]}\' site:www.instagram.com'"
+              self.q=f'"Followers" AND  "Following" + {query[2]} ("@gmail.com" OR "@yahoo.com" OR "@icloud.com" OR "@hotmail.com") {query[3]} site:www.instagram.com'
+              
                   #f"site:{query[4]}  '@gmail.com' '{query[2]}' '{query[3]}' 'Followers' Following '@yahoo.com' '@icloud.com'  '@outlook.com'"))                  
               if(query[7]):await utils.geolocate(page,query[7])
-              print('country',query[7])
-              self.pg=query[1]
-              self.min=query[0]
+            
+
               uid=query[6]
               self.count=0
-
-              while self.count<self.min and uid in self.files:
-               if not tries:
-                  print("TRIES:",'Exhausted')
-                  break
+              self.ctime=0
+              while self.count<self.min and uid in self.files and tries and self.tlim>self.ctime:
+               url =f'https://www.bing.com/search?first={pg}&count=50&cc={query[7]}&q={self.q}&rdr=1'
+              
                count = 0
                if counter == 20:
-                   await context.clear_cookies()
-                   counter = 0
-               url =f'https://www.google.com/search?start={self.pg}&num=100&gl={query[7]}&q={self.q}&rdr=1' 
-               self.pg += 50
-               print(url)
+                 await context.clear_cookies()
+                 counter = 0   
+               
                try:
                 await page.goto(url)
-                await asyncio.sleep(5)
-
-                if not await page.query_selector('div.MjjYud'):
-                   try:
-                    await page.click('button.search_button_suggest') 
-                   except Exception as e:
+                await asyncio.sleep(4)
+                try:
+                 await page.wait_for_load_state('load') 
+                 if not await page.query_selector('.b_algo'):
+                  await page.click('#sb_form_go') 
+                  await asyncio.sleep(4)
+                 await page.wait_for_load_state('load')  
+                except Exception as e: 
+                      await context.clear_cookies()
                       print('Exception at 161:',traceback.format_exc())
-                      break
-                await asyncio.sleep(5)
-                await page.wait_for_load_state('load')  
-                while True:
+                 
+                for i in range(0,4):
                  try:
-                    items = HTMLParser(await page.content(), 'html.parser').css('div.MjjYud')
+                    items = HTMLParser(await page.content(), 'html.parser').css('.b_algo')
                     break
-                 except: await asyncio.sleep(2)
-                self.count+= self.parse(items,uid,query[2],query[3])
+                 except:await asyncio.sleep(2)
+                
+                self.pg+=len(items)+1
+                count=self.parse(items,uid,query[2],query[3])
+                self.count+=count 
+                
+                if(count):
+                   print(self.count,self.pg)
+                   tries=6
+                else:tries-=1 
+                counter += 1 
                except Exception as e:print('Error:',traceback.format_exc())
-               
-               if(count):tries=6
-               else:tries-=1 
-               count = 0
-               counter += 1
-
-              if(uid in self.files):
-               data=self.files.pop(uid)[2].values()
-               self.query_tasks.get()  
-               print(time.time()-self.ttime,self.count)
-               self.count=0
-               await self.write_results_to_csv(f'./files/{query[5]}_{query[6]}.csv',data)
+               self.ctime=time.time()-self.ttime
+            
+              self.flg+=1
+              while(self.flg<self.up):await asyncio.sleep(2)
+              if(uid in self.files and self.flg>=self.up):
+                 data=list(self.files.pop(uid)[2].values())[:self.min]
+                 self.query_tasks.get()  
+                 print(self.ctime,self.count)
+                 fname=f'./files/{query[5]}_{query[6]}'
+                 await self.write_results_to_csv(f'{fname}.csv',data)
+                 print("DONE:")
             else:await asyncio.sleep(1)
-    
+       except:pass
     def parse(self,items,uid,*args):
                 count=0
                 for item in items:
-                    data_text = item.text()
+                    data_text = item.css_first('.b_caption').text()
                     email = re.search(r'([A-Za-z0-9]+[.-_])*[A-Za-z0-9]+@[+A-Za-z0-9-]+(\.[A-Z|a-z]{2,})+', data_text)
                     email=email.group() if email else None
-                    link =item.css_first('a.UWckNb')
+                    link =item.css_first('div.b_attribution cite')
                     link=link.text() if link else '' 
                     pattern = r'https:\/\/www\.instagram\.com\/([a-zA-Z0-9._-]+)(:\/(reel|p|reels|followers|follower|following).*)?\/?'
                     username=re.search(pattern,link)
-                    
-                    if username:
-                          username=username.group(1)
-                          if username in ('reel','p','reels','followers','follower','following'):username=''
-                     
-                    if (email and username) or username in self.files[uid][2] :
-                        
-                        following = re.search(r'(\d{1,3}(?:,\d{3})*(?:\.\d+)?[KM]?) Following', data_text)
-                        following = (following.group(1)).replace('K','000').replace('M','000000').replace(',','') if following else ''
-                        followers = re.search(r'(\d{1,3}(?:,\d{3})*(?:\.\d+)?[KM]?) Followers', data_text)
-                        followers = (followers.group(1)).replace('K','000').replace('M','000000').replace(',','') if followers else ''
-                        if followers:
+                    following = re.search(r'(\d{1,3}(?:,\d{3})*(?:\.\d+)?[KM]?) Following', data_text)
+                    following = (following.group(1)).replace('K','000').replace('M','000000').replace(',','') if following else ''
+                    followers = re.search(r'(\d{1,3}(?:,\d{3})*(?:\.\d+)?[KM]?) Followers', data_text)
+                    followers = (followers.group(1)).replace('K','000').replace('M','000000').replace(',','') if followers else ''
+                    username=username.group(1) if username else None
+                    if username in ('reel','p','reels','followers','follower','following'):username=None  
+                    if email and username and followers:                   
+                     if  username not in self.files[uid][2]:
                          data=(username,email,following,followers,link,*args)
-                         if username in self.files[uid][2]:
-                            self.files[uid][2][username]=tuple(val1 if val1 else val2 for val1, val2 in zip(self.files[uid][2][username],data))     
-                         elif uid in self.files:
+                         if uid in self.files:
                             count += 1
-                            self.files[uid][0]+=1
-                            self.files[uid][2][username]=data
+                            self.files[uid][2][username]=data       
                          else:break
                     
+                    
+                self.files[uid][0]+=count   
                 return count        
            
     def add(self,data): 
-            self.files[data[6]]=[0,data[0],{}]
+            self.pg=data[1]
+            self.min=data[0]
+            self.tlim=data[8]
+            self.files[data[6]]=[0,data[0],{},0,0]
             self.ttime=time.time()
             self.query_tasks.put(data)                  
 
@@ -228,6 +225,6 @@ if(__name__=='__main__'):
    
    ls=LeadScraper( )
    uid=str(uuid.uuid4())
-   (ls.add([1000,1,'fitness','madrid','instagram.com','test_token',uid,'ES']))
+   (ls.add([100,1,'dance','dehradun','instagram.com','test_token',uid,'IN',160]))
    asyncio.run(ls.handler())
     
