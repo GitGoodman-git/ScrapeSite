@@ -148,16 +148,17 @@ class LeadScraper():
                          except Exception as e:
                             print("[ERROR]:timed out loading next button...")
                             await page.reload()    
-                        if flag:
-                            next=re.sub(r"first=\d+",f'first={self.pg}',page.url)                        
                         
-                        print(self.count,self.pg)  
+                        if flag:next=re.sub(r"first=\d+",f'first={self.pg}',page.url)               
+
+                        
+                        print(self.count,self.pg,self.ctime)  
                         
                         next= await next.get_attribute('href')
                         await page.goto(r'https://www.bing.com'+next)
                         counter += 1 
                         self.ctime=time.time()-self.ttime
-      
+                        
                     except Exception as e:pass
                         #print('Error:',traceback.format_exc())
                
@@ -213,6 +214,7 @@ class LeadScraper():
             self.pg=data[1]-10
             self.min=data[0]
             self.tlim=data[8]
+            print(self.tlim)
             self.files[data[6]]=[0,data[0],{},0,0]
             self.ttime=time.time()
             self.query_tasks.put(data)                  
@@ -221,6 +223,6 @@ if(__name__=='__main__'):
    
    ls=LeadScraper( )
    uid=str(uuid.uuid4())
-   (ls.add([100,1,'fitness','madrid','instagram.com','test_token',uid,'ES',160]))
+   (ls.add([100,1,'fitness','madrid','instagram.com','test_token',uid,'ES',10]))
    asyncio.run(ls.handler())
     
