@@ -186,12 +186,14 @@ class LeadScraper():
                  self.query_tasks.get()  
                  print(self.ctime,self.count)
                  data=self.files.pop(uid)[2].values()
-                 
+                 data_=self.data
                  self.query_tasks.get()  
                  self.count=0
                  self.flg=0
+                 self.data=[]
                  fname=f'./files/{query[5]}_{query[6]}'
-                 await asyncio.gather(self.write_results_to_csv(f'{fname}.csv',data),self.write_results_to_csv(f'{fname}_raw.csv',self.d))
+                 await asyncio.gather(self.write_results_to_csv(f'{fname}.csv',data),self.write_results_to_csv(f'{fname}.csv',data))
+                 await asyncio.gather(self.write_results_to_csv(f'{fname}.csv',data),self.write_results_to_csv(f'{fname}_raw.csv',data_))
                
             else:await asyncio.sleep(1)
        except:pass
@@ -209,14 +211,14 @@ class LeadScraper():
                     following = (following.group(1)).replace('K','000').replace('M','000000').replace(',','') if following else ''
                     followers = re.search(r'(\d{1,3}(?:,\d{3})*(?:\.\d+)?[KM]?) Followers', data_text)
                     followers = (followers.group(1)).replace('K','000').replace('M','000000').replace(',','') if followers else ''
-                    username=username.group(1) if username else None
+                    username=username.group(1) if username else None     
                     if username in ('reel','p','reels','followers','follower','following'):username=None  
+                    data=(username,email,following,followers,link,*args)
                     if email and username and followers:                   
                      if  username not in self.files[uid][2]:
-                         data=(username,email,following,followers,link,*args)
                          self.files[uid][2][username]=data
                          count += 1
-
+                    self.data.append(data)  
                 self.files[uid][0]+=count   
                 return count        
            
