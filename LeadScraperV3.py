@@ -123,7 +123,7 @@ class LeadScraper():
     async def scrape_insta(self,page,link):
          await page.goto(link)
          #s2='section main section ul'
-   
+
     async def fetch_search_results(self,context):
        try: 
         page=await context.new_page()
@@ -140,8 +140,6 @@ class LeadScraper():
              
               if(query[7]):await utils.geolocate(page,query[7])
               uid=query[6]
-              
-              task=asyncio.create_task(self.fetch_search_results_aio(uid))
               self.count=0
               self.ctime=0
               

@@ -281,7 +281,6 @@ async def geolocate(page, country_code):
         
         await page.set_extra_http_headers({'Accept-Language':','.join(['en',*get_languages_for_country(country_code)])})
         loc=codes.get(country_code)
-        print(loc)
         await timezone(page,country_code)
         if loc:
             await page.evaluate('''(latitude, longitude) => {
