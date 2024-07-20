@@ -147,15 +147,13 @@ class LeadScraper():
                             flag=False
                          except Exception as e:
                             print(type(e))
-                            context.clear_cookies()
+                            await context.clear_cookies()
                             print("[ERROR]:timed out loading next button...")
                             await page.reload()        
                         
                         print(self.count,self.pg,self.ctime)  
                         self.ctime=time.time()-self.ttime
-                        if flag:next=re.sub(r"first=\d+",f'first={self.pg}',page.url)               
-                        else: next= await next.get_attribute('href')
-                        
+
                         await page.goto(r'https://www.bing.com'+next)
                         counter += 1 
                         
