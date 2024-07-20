@@ -128,13 +128,13 @@ class LeadScraper():
               self.count=0
               self.ctime=0
               url =f'https://www.bing.com/search?count=50&cc={query[7]}&q={self.q}&rdr=1' 
-
-              await page.goto(url)
               await page.evaluate('document.body.style.zoom = "150%"')
 
+              
+             
               while self.count<self.min and uid in self.files and tries and self.tlim>self.ctime :
-                
                     try:  
+                        await page.goto(url,timeout=10000)
                         next=page.locator('a[title="Next page"]')
                         flag=True
                         for i in range(0,3): 
@@ -146,19 +146,20 @@ class LeadScraper():
                             self.parse(items,uid,query[2],query[3])  
                             flag=False
                          except Exception as e:
-                            print(type(e))
                             await context.clear_cookies()
                             print("[ERROR]:timed out loading next button...")
-                            await page.reload()        
+                            await page.reload()    
                         
-                        print(self.count,self.pg,self.ctime)  
                         self.ctime=time.time()-self.ttime
-
-                        await page.goto(r'https://www.bing.com'+next)
+                        print(self.count,self.pg,self.ctime)  
+                        
+                        if flag:url=re.sub(r"first=\d+",f'first={self.pg+20}',page.url)               
+                        else: url= r'https://www.bing.com'+(await next.get_attribute('href'))
+                            
                         counter += 1 
                         
                         
-                    except Exception as e:pass
+                    except Exception as e:print(e)
                         #print('Error:',traceback.format_exc())
                
               self.flg+=1
@@ -222,6 +223,6 @@ if(__name__=='__main__'):
    
    ls=LeadScraper( )
    uid=str(uuid.uuid4())
-   (ls.add([100,1,'fitness','madrid','instagram.com','test_token',uid,'ES',10]))
+   (ls.add([1000,1,'fitness','madrid','instagram.com','test_token',uid,'ES',180]))
    asyncio.run(ls.handler())
     
