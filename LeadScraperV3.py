@@ -133,7 +133,7 @@ class LeadScraper():
               query=self.query_tasks.queue[0]
               counter = 0
               tries=3
-              self.q=(f'"@gmail.com"+ followers or following and {query[2]}+ {query[3]}+   site:instagram.com')
+              self.q=(f'followers or following and {query[2]}+ {query[3]}+ business profile  site:instagram.com')
               
                   #f"site:{query[4]}  '@gmail.com' '{query[2]}' '{query[3]}' 'Followers' Following '@yahoo.com' '@icloud.com'  '@outlook.com'"))                  
              
