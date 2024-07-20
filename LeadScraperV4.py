@@ -147,24 +147,21 @@ class LeadScraper():
                 if(count == 0):tries+=1
                 else:tries=30
             return False
-    async def fetch_search_results(self,context):
+    async def fetch_search_results(self,suffix,context):
        try: 
         page=await context.new_page()
         await stealth_async(page)
-        print('[LOADED]:Context')
         while True:
             if not self.query_tasks.empty():      
               query=self.query_tasks.queue[0]
               counter = 0
               tries=3
-              self.q=(f'"@gmail.com" {query[3]}  followers  following  {query[2]}  site:www.instagram.com')
-              
+              self.q=(f'"{suffix}" {query[3]}  followers  following  {query[2]}  site:www.instagram.com')  
                   #f"site:{query[4]}  '@gmail.com' '{query[2]}' '{query[3]}' 'Followers' Following '@yahoo.com' '@icloud.com'  '@outlook.com'"))                  
              
               if(query[7]):await utils.geolocate(page,query[7])
               uid=query[6]
               
-              task=asyncio.create_task(self.fetch_search_results_aio(uid))
               self.count=0
               self.ctime=0
               

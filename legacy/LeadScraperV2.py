@@ -47,7 +47,7 @@ class LeadScraper():
               print(self.count,self.requests,self.min)
               ctime=time.time()-ctime  
               await self.write_results_to_csv(f'./files/{query[5]}_{query[6]}.csv',query[2],query[3],query[4])   
-              self.files.remove(query[6])
+              self.files.pop(query[6])
               #await self.send_json_to_webhook(query[5],query[2],query[3],query[4],ctime,self.pg,query[1],self.min)
               print('done :',ctime)   
              else:await asyncio.sleep(1) 
@@ -91,33 +91,39 @@ class LeadScraper():
                 url = f'https://www.bing.com/search?first={int(self.pg * 50)}&count=50&q={self.q}&rdr=1'
                 async with session.get(url, headers=h, proxy=self.proxy) as response:
                     html = await response.text()
-                    soup = HTMLParser(html, 'html.parser')
+                    soup = HTMLParser(html, 'html.parser').css('.b_algo')
                 link = ''
-                print(soup.text())
-                for item in soup.css('.b_algo'):
-                    data_text = item.text()
-                    email = re.search(r'([A-Za-z0-9]+[.-_])*[A-Za-z0-9]+@[+A-Za-z0-9-]+(\.[A-Z|a-z]{2,})+', data_text)
-                    try:
-                        link = item.css_first('h2 a').attributes['href']
-                    except:
-                        link = ''
-                    following = re.search(r'\b\d+[A-Z]*\s+Followers\b', data_text)
-                    following = (following.group())[:-9] if following else ""
-                    followers = re.search(r'\b\d+[A-Z]*\s+Following\b', data_text)
-                    followers = (followers.group())[:-9] if followers else ""
-                    if email:
-                        count += 1
-                        email = following = email.group()
-                        self.data.append((link.split('/')[-2], link, email, following, followers))
-                    else:
-                        self.data_.append((link.split('/')[-2], link, '', following, followers))
+                
+                count=self.parse(soup,uid,"l",'m')
                 self.files[uid]+= count
                 if(count):tries=30
                 else:tries-=1 
                 print(count)
                 count = 0
                 counter += 1
-        
+    def parse(self,items,uid,*args):
+                count=0
+                for item in items:
+                    data_text = item.css_first('.b_caption').text()
+                    email = re.search(r'([A-Za-z0-9]+[.-_])*[A-Za-z0-9]+@[+A-Za-z0-9-]+(\.[A-Z|a-z]{2,})+', data_text)
+                    email=email.group() if email else None
+                    link =item.css_first('div.b_attribution cite')
+                    link=link.text() if link else '' 
+                    pattern = r'https:\/\/www\.instagram\.com\/([a-zA-Z0-9._-]+)(:\/(reel|p|reels|followers|follower|following).*)?\/?'
+                    username=re.search(pattern,link)
+                    following = re.search(r'(\d{1,3}(?:,\d{3})*(?:\.\d+)?[KM]?) Following', data_text)
+                    following = (following.group(1)).replace('K','000').replace('M','000000').replace(',','') if following else ''
+                    followers = re.search(r'(\d{1,3}(?:,\d{3})*(?:\.\d+)?[KM]?) Followers', data_text)
+                    followers = (followers.group(1)).replace('K','000').replace('M','000000').replace(',','') if followers else ''
+                    username=username.group(1) if username else None
+                    if username in ('reel','p','reels','followers','follower','following'):username=None  
+                    if email and username and followers:    
+                         data=(username,email,following,followers,link,*args)
+                         self.data.append(data)
+                    
+                    
+                #self.files[uid][0]+=count   
+                return count        
     def add(self,data):
             pos=len(self.query_tasks)
             id=str(uuid.uuid4()) 
