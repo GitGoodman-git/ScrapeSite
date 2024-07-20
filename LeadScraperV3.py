@@ -154,11 +154,12 @@ class LeadScraper():
                 await asyncio.sleep(4)
                 
                 if not await page.query_selector('.b_algo'):
-                   try:await page.click('#sb_form_go') 
+                   try:
+                      await page.click('#sb_form_go') 
                    except Exception as e: 
                       context.clear_cookies()
                       print('Exception at 161:',print(page.url))
-                   await asyncio.sleep(2)
+                   await asyncio.sleep(3)
 
                 await page.wait_for_load_state('load')  
                 for i in range(0,3):
@@ -184,14 +185,12 @@ class LeadScraper():
               if(uid in self.files and self.flg>=self.up):
                  data=list(self.files.pop(uid)[2].values())[:self.min]
                  self.query_tasks.get()  
-                 print(self.ctime,self.count)
-                 data=self.files.pop(uid)[2].values()
                  data_=self.data
-                 self.query_tasks.get()  
                  self.count=0
                  self.flg=0
                  self.data=[]
                  fname=f'./files/{query[5]}_{query[6]}'
+                 print(self.ctime,self.count)
                  await asyncio.gather(self.write_results_to_csv(f'{fname}.csv',data),self.write_results_to_csv(f'{fname}.csv',data))
                  await asyncio.gather(self.write_results_to_csv(f'{fname}.csv',data),self.write_results_to_csv(f'{fname}_raw.csv',data_))
                
