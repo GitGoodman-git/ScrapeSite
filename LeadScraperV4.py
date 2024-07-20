@@ -140,24 +140,25 @@ class LeadScraper():
                         for i in range(0,3): 
                          try:
                             await next.wait_for(state='attached',timeout=12000)
-                            await asyncio.sleep(4)
+                            await asyncio.sleep(1)
                             items = HTMLParser(await page.content(), 'html.parser').css('.b_algo')
                             self.pg+=len(items)
                             self.parse(items,uid,query[2],query[3])  
                             flag=False
                          except Exception as e:
+                            print(type(e))
+                            context.clear_cookies()
                             print("[ERROR]:timed out loading next button...")
-                            await page.reload()    
-                        
-                        if flag:next=re.sub(r"first=\d+",f'first={self.pg}',page.url)               
-
+                            await page.reload()        
                         
                         print(self.count,self.pg,self.ctime)  
+                        self.ctime=time.time()-self.ttime
+                        if flag:next=re.sub(r"first=\d+",f'first={self.pg}',page.url)               
+                        else: next= await next.get_attribute('href')
                         
-                        next= await next.get_attribute('href')
                         await page.goto(r'https://www.bing.com'+next)
                         counter += 1 
-                        self.ctime=time.time()-self.ttime
+                        
                         
                     except Exception as e:pass
                         #print('Error:',traceback.format_exc())
