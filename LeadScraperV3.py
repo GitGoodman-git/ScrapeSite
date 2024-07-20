@@ -87,7 +87,7 @@ class LeadScraper():
         self.pg=1
         self.flg=0
         self.query_tasks=queue.Queue()
-        self.up=3
+        self.up=8
 
         self.d=[]
         
