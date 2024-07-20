@@ -113,8 +113,8 @@ class LeadScraper():
     #       print(response.status)
     
     async def write_results_to_csv(self,filename,data):
-     
-     async with aiofiles.open(filename, 'a', newline='', encoding='utf-8') as file:
+     print(f"[CREATE]:Generating file....{filename}")
+     async with aiofiles.open(filename, 'w', newline='', encoding='utf-8') as file:
         writer = AsyncWriter(file)
         await writer.writerow(['username','email','following','followers','link','niche','location']) 
         await writer.writerows(data)
@@ -154,13 +154,13 @@ class LeadScraper():
                 await asyncio.sleep(4)
                 
                 if not await page.query_selector('.b_algo'):
-                   try:
-                      await page.click('#sb_form_go') 
-                      await page.wait_for_load_state('load')  
-               
-                   except Exception as e: print('Exception at 161:',print(page.url))
-                   await asyncio.sleep(4)
+                   try:await page.click('#sb_form_go') 
+                   except Exception as e: 
+                      context.clear_cookies()
+                      print('Exception at 161:',print(page.url))
+                   await asyncio.sleep(2)
 
+                await page.wait_for_load_state('load')  
                 while True:
                  try:
                     await page.wait_for_load_state('load') 
@@ -182,13 +182,17 @@ class LeadScraper():
 
               while(self.flg<self.up):await asyncio.sleep(2)
               if(uid in self.files and self.flg>=self.up):
+                 data=list(self.files.pop(uid)[2].values())[:self.min]
+                 self.query_tasks.get()  
                  print(self.ctime,self.count)
                  data=self.files.pop(uid)[2].values()
+                 self.files[uid][3]=self.pg
                  self.query_tasks.get()  
                  self.count=0
                  self.flg=0
                  fname=f'./files/{query[5]}_{query[6]}'
                  await asyncio.gather(self.write_results_to_csv(f'{fname}.csv',data),self.write_results_to_csv(f'{fname}_raw.csv',self.d))
+               
             else:await asyncio.sleep(1)
        except:pass
     def parse(self,items,uid,*args):
@@ -208,7 +212,8 @@ class LeadScraper():
                     username=username.group(1) if username else None
                     if username in ('reel','p','reels','followers','follower','following'):username=None  
                     if email and username and followers:                   
-                     if  username not in self.files[uid][2]:
+                     if  email not in self.files[uid][2]:
+                        if followers:
                          data=(username,email,following,followers,link,*args)
                          if uid in self.files:
                             count += 1
@@ -231,6 +236,6 @@ if(__name__=='__main__'):
    
    ls=LeadScraper( )
    uid=str(uuid.uuid4())
-   (ls.add([1000,1,'fitness','madrid','instagram.com','test_token',uid,'ES',160]))
+   (ls.add([10,1,'fitness','madrid','instagram.com','test_token',uid,'ES',160]))
    asyncio.run(ls.handler())
     
