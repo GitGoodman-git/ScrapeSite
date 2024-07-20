@@ -123,30 +123,7 @@ class LeadScraper():
     async def scrape_insta(self,page,link):
          await page.goto(link)
          #s2='section main section ul'
-    async def fetch_search_results_aio(self,uid):
-        while True:
-         async with aio.ClientSession() as session:
-            counter = 0
-            tries=30
-            while self.files[uid]<self.min and tries:
-                h= headers
-                count = 0
-                h['User-Agent'] = agent.random
-                self.pg += 1
-                if counter == 25:
-                    session.cookie_jar.clear()
-                    counter = 0
-                url = f'https://www.bing.com/search?first={int(self.pg)}&count=50&q={self.q}&rdr=1'
-                async with session.get(url, headers=h, proxy=self.proxy) as response:
-                    html = await response.text()
-                    soup = HTMLParser(html, 'html.parser').css('.b_algo') 
-                    if(soup):
-                        self.pg+=50
-                        count=self.parse(soup)
-                        print('#',count,self.count,self.pg)
-                if(count == 0):tries+=1
-                else:tries=30
-            return False
+   
     async def fetch_search_results(self,context):
        try: 
         page=await context.new_page()
@@ -170,7 +147,7 @@ class LeadScraper():
               
               while self.count<self.min and uid in self.files and tries and self.tlim>self.ctime:
                self.pg+=10
-               url =f'https://www.bing.com/search?count=50&first={self.pg}&go={self.q}&q={self.q}&rdr=1&FORM=PORE'
+               url =f'https://www.bing.com/search?count=50&first={self.pg}&cc={query[7]}&q={self.q}&rdr=1&FORM=PORE'
                count = 0
                if counter == 20:
                    await context.clear_cookies()
