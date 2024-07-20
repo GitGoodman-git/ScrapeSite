@@ -161,7 +161,7 @@ class LeadScraper():
                    await asyncio.sleep(2)
 
                 await page.wait_for_load_state('load')  
-                while True:
+                for i in range(0,3):
                  try:
                     await page.wait_for_load_state('load') 
                     items = HTMLParser(await page.content(), 'html.parser').css('.b_algo')
@@ -212,15 +212,11 @@ class LeadScraper():
                     username=username.group(1) if username else None
                     if username in ('reel','p','reels','followers','follower','following'):username=None  
                     if email and username and followers:                   
-                     if  email not in self.files[uid][2]:
-                        if followers:
+                     if  username not in self.files[uid][2]:
                          data=(username,email,following,followers,link,*args)
-                         if uid in self.files:
-                            count += 1
-                            self.files[uid][2][username]=data
-                         else:break
-                    self.d.append((username,email,following,followers,link,*args))
-                    
+                         self.files[uid][2][username]=data
+                         count += 1
+
                 self.files[uid][0]+=count   
                 return count        
            
