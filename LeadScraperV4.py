@@ -149,7 +149,7 @@ class LeadScraper():
                             print("[ERROR]:timed out loading next button...")
                             await page.reload()    
                         if flag:
-                            next=re.sub(r"first=\d+",f'first={self.pg}',page.url())                        
+                            next=re.sub(r"first=\d+",f'first={self.pg}',page.url)                        
                         
                         print(self.count,self.pg)  
                         
@@ -158,7 +158,8 @@ class LeadScraper():
                         counter += 1 
                         self.ctime=time.time()-self.ttime
       
-                    except Exception as e:print('Error:',traceback.format_exc())
+                    except Exception as e:pass
+                        #print('Error:',traceback.format_exc())
                
               self.flg+=1
               await context.clear_cookies()
