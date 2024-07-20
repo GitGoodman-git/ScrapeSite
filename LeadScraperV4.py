@@ -19,49 +19,50 @@ proxy = {
 }
 agent=UserAgent()
 args=[
-        '--deny-permission-prompts',
-        '--no-default-browser-check',
-        '--no-nth-run',
-        '--disable-features=NetworkService',
-        '--deny-permission-prompts',
-        '--disable-popup-blocking',
-        '--ignore-certificate-errors',
-        '--no-service-autorun',
-        '--password-store=basic',
-        '--disable-audio-output',
-        '--blink-settings=imagesEnabled=false'
-        '--blink-settings=fonts=!',
-        '--disable-javascript',
-        "--high-dpi-support=0.20",
-        "--force-device-scale-factor=0.7",
-        
-        '--disable-dev-shm-usage',
-        '--disable-background-timer-throttling',
-        '--disable-backgrounding-occluded-windows',
-        '--disable-breakpad',
-        '--disable-client-side-phishing-detection',
-        '--disable-component-extensions-with-background-pages',
-        '--disable-default-apps',
-        '--disable-extensions',
-        '--disable-features=site-per-process',
-        '--disable-hang-monitor',
-        '--disable-ipc-flooding-protection',
-        '--disable-popup-blocking',
-        '--disable-prompt-on-repost',
-        '--disable-renderer-backgrounding',
-        '--disable-sync',
-        '--no-sandbox',
-        '--disable-web-security',
-        '--disable-accelerated-2d-canvas',
-        '--disable-gpu',
-        '--disable-software-rasterizer',
-        '--disable-webgl',
-        '--disable-notifications',
-        '--disable-infobars',
-        '--disable-background-networking',
-        '--metrics-recording-only',
-        '--no-first-run'
-
+               '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-infobars',
+            '--disable-dev-shm-usage',
+            '--start-maximized',
+            '--deny-permission-prompts',
+            '--no-default-browser-check',
+            '--no-nth-run',
+            '--disable-features=NetworkService',
+            '--disable-popup-blocking',
+            '--ignore-certificate-errors',
+            '--no-service-autorun',
+            '--password-store=basic',
+            '--disable-audio-output',
+            '--blink-settings=imagesEnabled=false',
+            '--blink-settings=fonts=!',
+            '--disable-javascript',
+            '--high-dpi-support=0.20',
+            '--force-device-scale-factor=0.3',
+            '--disable-background-timer-throttling',
+            '--disable-backgrounding-occluded-windows',
+            '--disable-breakpad',
+            '--disable-client-side-phishing-detection',
+            '--disable-component-extensions-with-background-pages',
+            '--disable-default-apps',
+            '--blink-settings=imagesEnabled=false',
+            '--disable-extensions',
+            '--disable-features=site-per-process',
+            '--disable-hang-monitor',
+            '--disable-ipc-flooding-protection',
+            '--disable-popup-blocking',
+            '--disable-prompt-on-repost',
+            '--disable-renderer-backgrounding',
+            '--disable-sync',
+            '--disable-web-security',
+            '--disable-accelerated-2d-canvas',
+            '--disable-gpu',
+            '--disable-software-rasterizer',
+            '--disable-webgl',
+            '--disable-notifications',
+            '--disable-background-networking',
+            '--metrics-recording-only',
+            '--no-first-run',
+            '--incognito'
         ]
 import utils
 headers={
@@ -89,30 +90,16 @@ class LeadScraper():
         self.flg=0
         self.query_tasks=queue.Queue()
         self.up=10
-
         self.d=[]
         
     async def handler(self):
             
         async with async_playwright() as playwright:  
             browser = await playwright.chromium.launch(args=args,proxy=self.proxy,headless=True) 
-            await asyncio.gather(*[self.fetch_search_results(await browser.new_context(user_agent=agent.random,viewport={'width':1000,'height':10000})) for i in range(0,self.up)])
-            
-    # async def send_json_to_webhook(self,url,niche,location,site,t,p,s,n):
-    #  data=dumps({'niche':niche,
-    #              'location':location,
-    #              'site':site,
-    #              'time':t,
-    #              '_pos':p,
-    #              '_start':s,
-    #              '_n':n,
-    #              'data':self.data[:n]                 
-    #              })
-     
-    #  async with aio.ClientSession() as session:
-    #     async with session.post(url, json=data) as response:
-    #       print(response.status)
-    
+            suffixes=["@gmail.com"]
+            self.up=len(suffixes)
+            ctx=[self.fetch_search_results(await browser.new_context(user_agent=agent.random,viewport={'width':7000,'height':15000}),suffix) for suffix in suffixes]
+            await asyncio.gather(*ctx)    
     async def write_results_to_csv(self,filename,data):
      print(f"[CREATE]:Generating file....{filename}")
      async with aiofiles.open(filename, 'w', newline='', encoding='utf-8') as file:
@@ -123,103 +110,78 @@ class LeadScraper():
     async def scrape_insta(self,page,link):
          await page.goto(link)
          #s2='section main section ul'
-    async def fetch_search_results_aio(self,uid):
-        while True:
-         async with aio.ClientSession() as session:
-            counter = 0
-            tries=30
-            while self.files[uid]<self.min and tries:
-                h= headers
-                count = 0
-                h['User-Agent'] = agent.random
-                self.pg += 1
-                if counter == 25:
-                    session.cookie_jar.clear()
-                    counter = 0
-                url = f'https://www.bing.com/search?first={int(self.pg)}&count=50&q={self.q}&rdr=1'
-                async with session.get(url, headers=h, proxy=self.proxy) as response:
-                    html = await response.text()
-                    soup = HTMLParser(html, 'html.parser').css('.b_algo') 
-                    if(soup):
-                        self.pg+=50
-                        count=self.parse(soup)
-                        print('#',count,self.count,self.pg)
-                if(count == 0):tries+=1
-                else:tries=30
-            return False
-    async def fetch_search_results(self,suffix,context):
+
+    async def fetch_search_results(self,context,suffix):
        try: 
         page=await context.new_page()
+        context.set_default_timeout(3000) 
         await stealth_async(page)
+        print('[LOADED]:Context')
         while True:
             if not self.query_tasks.empty():      
               query=self.query_tasks.queue[0]
               counter = 0
-              tries=3
-              self.q=(f'"{suffix}" {query[3]}  followers  following  {query[2]}  site:www.instagram.com')  
-                  #f"site:{query[4]}  '@gmail.com' '{query[2]}' '{query[3]}' 'Followers' Following '@yahoo.com' '@icloud.com'  '@outlook.com'"))                  
-             
+              tries=6
+              self.q=(f'"{suffix}" {query[3]}  followers  following  {query[2]}  site:www.instagram.com')              
               if(query[7]):await utils.geolocate(page,query[7])
               uid=query[6]
-              
               self.count=0
               self.ctime=0
-              
-              while self.count<self.min and uid in self.files and tries and self.tlim>self.ctime:
-               self.pg+=10
-               url =f'https://www.bing.com/search?count=50&first={self.pg}&go={self.q}&q={self.q}&rdr=1&FORM=PORE'
-               count = 0
-               if counter == 20:
-                   await context.clear_cookies()
-                   counter = 0   
-               try:
-                await page.goto(url)
-                await asyncio.sleep(4)
-                
-                if not await page.query_selector('.b_algo'):
-                   try:
-                      await page.click('#sb_form_go') 
-                   except Exception as e: 
-                      context.clear_cookies()
-                      print('Exception at 161:',print(page.url))
-                   await asyncio.sleep(3)
+              url =f'https://www.bing.com/search?count=50&cc={query[7]}&q={self.q}&rdr=1' 
 
-                await page.wait_for_load_state('load')  
-                for i in range(0,3):
-                 try:
-                    await page.wait_for_load_state('load') 
-                    items = HTMLParser(await page.content(), 'html.parser').css('.b_algo')
-                    self.pg+=len(items)
-                    break
-                 except:await asyncio.sleep(2)
-                count=self.parse(items,uid,query[2],query[3])
-                print(count,self.count,self.pg) 
-                if(count):tries=3
-                else:tries-=1 
-                counter += 1 
-               except KeyError:pass 
-               except Exception as e:print('Error:',traceback.format_exc())
-               self.ctime=time.time()-self.ttime
-              
+              await page.goto(url)
+              await page.evaluate('document.body.style.zoom = "150%"')
+
+              while self.count<self.min and uid in self.files and tries and self.tlim>self.ctime and self.pg<2*self.min:
+                    count=0
+                    try:  
+                        next=page.locator('a[title="Next page"]')
+                        flag=True
+                        for i in range(0,3): 
+                         try:
+                            await next.wait_for(state='attached',timeout=12000)
+                            await asyncio.sleep(1)
+                            items = HTMLParser(await page.content(), 'html.parser').css('.b_algo')
+                            self.pg+=len(items)
+                            count=self.parse(items,uid,query[2],query[3])  
+                            tries=3 if count else tries-1
+                            flag=False
+                         except TimeoutError as e:
+                            print("[ERROR]:timed out loading next button...")
+                            await page.reload()
+                            
+                        if flag:
+                            tries-=1
+                            next=re.sub(r"first=\d+",f'first={self.pg}',page.url())                        
+                        
+                        print(self.count,self.pg)  
+                        
+                        next= await next.get_attribute('href')
+                        await page.goto(r'https://www.bing.com'+next)
+                        counter += 1 
+                        self.ctime=time.time()-self.ttime
+      
+                    except Exception as e:print('Error:',traceback.format_exc())
+               
               self.flg+=1
-
               while(self.flg<self.up):await asyncio.sleep(2)
               if(uid in self.files and self.flg>=self.up):
                  data=list(self.files.pop(uid)[2].values())[:self.min]
                  self.query_tasks.get()  
                  print(self.ctime,self.count)
-
                  data_=self.data
                  self.count=0
                  self.flg=0
                  self.data=[]
                  fname=f'./files/{query[5]}_{query[6]}'
-                 
                  await asyncio.gather(self.write_results_to_csv(f'{fname}.csv',data),self.write_results_to_csv(f'{fname}.csv',data))
                  await asyncio.gather(self.write_results_to_csv(f'{fname}.csv',data),self.write_results_to_csv(f'{fname}_raw.csv',data_))
                
             else:await asyncio.sleep(1)
        except:pass
+
+
+
     def parse(self,items,uid,*args):
                 count=0
                 for item in items:
@@ -243,7 +205,8 @@ class LeadScraper():
                          self.files[uid][2][username]=data
                          count += 1
                          self.count+=1
-                    self.data.append(data)  
+
+                    else:self.data.append(data)  
                 self.files[uid][0]+=count   
                 return count        
            
@@ -259,6 +222,6 @@ if(__name__=='__main__'):
    
    ls=LeadScraper( )
    uid=str(uuid.uuid4())
-   (ls.add([100,1,'fitness','madrid','instagram.com','test_token',uid,'ES',160]))
+   (ls.add([10,1,'fitness','madrid','instagram.com','test_token',uid,'ES',160]))
    asyncio.run(ls.handler())
     
