@@ -95,11 +95,12 @@ class LeadScraper():
     async def handler(self):
             
         async with async_playwright() as playwright:  
-            browser = await playwright.chromium.launch(args=args,proxy=self.proxy,headless=False) 
+            browser = await playwright.chromium.launch(args=args,proxy=self.proxy,headless=True) 
             suffixes=[("@gmail.com","instagram.com")]#,("@gmail.com","threads.net")]
             self.up=len(suffixes)
             ctx=[self.fetch_search_results(await browser.new_context(user_agent=agent.random,viewport={'width':3000,'height':30000}),suffix,site) for suffix,site in suffixes]
             await asyncio.gather(*ctx)    
+
     async def write_results_to_csv(self,filename,data):
      print(f"[CREATE]:Generating file....{filename}")
      async with aiofiles.open(filename, 'w', newline='', encoding='utf-8') as file:
