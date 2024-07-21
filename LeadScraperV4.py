@@ -36,8 +36,8 @@ args=[
             '--blink-settings=imagesEnabled=false',
             '--blink-settings=fonts=!',
             '--disable-javascript',
-            '--high-dpi-support=0.20',
-            '--force-device-scale-factor=0.3',
+            '--high-dpi-support=0.40',
+            '--force-device-scale-factor=0.4',
             '--disable-background-timer-throttling',
             '--disable-backgrounding-occluded-windows',
             '--disable-breakpad',
@@ -95,10 +95,10 @@ class LeadScraper():
     async def handler(self):
             
         async with async_playwright() as playwright:  
-            browser = await playwright.chromium.launch(args=args,proxy=self.proxy,headless=True) 
-            suffixes=["@gmail.com"]
+            browser = await playwright.chromium.launch(args=args,proxy=self.proxy,headless=False) 
+            suffixes=[("@gmail.com","instagram.com")]#,("@gmail.com","threads.net")]
             self.up=len(suffixes)
-            ctx=[self.fetch_search_results(await browser.new_context(user_agent=agent.random,viewport={'width':7000,'height':15000}),suffix) for suffix in suffixes]
+            ctx=[self.fetch_search_results(await browser.new_context(user_agent=agent.random,viewport={'width':3000,'height':30000}),suffix,site) for suffix,site in suffixes]
             await asyncio.gather(*ctx)    
     async def write_results_to_csv(self,filename,data):
      print(f"[CREATE]:Generating file....{filename}")
@@ -111,7 +111,7 @@ class LeadScraper():
          await page.goto(link)
          #s2='section main section ul'
 
-    async def fetch_search_results(self,context,suffix):
+    async def fetch_search_results(self,context,suffix,site):
        try: 
         page=await context.new_page()
         context.set_default_timeout(3000) 
@@ -120,43 +120,46 @@ class LeadScraper():
         while True:
             if not self.query_tasks.empty():      
               query=self.query_tasks.queue[0]
-              counter = 0
-              tries=6
-              self.q=(f'"{suffix}" {query[3]}  followers  following  {query[2]}  site:www.instagram.com')              
+            
+              self.q=(f'"{suffix}" {query[3]}  followers  following  {query[2]}  site:{site}')              
               if(query[7]):await utils.geolocate(page,query[7])
               uid=query[6]
               self.count=0
               self.ctime=0
-              url =f'https://www.bing.com/search?count=50&cc={query[7]}&q={self.q}&rdr=1' 
-              await page.evaluate('document.body.style.zoom = "150%"')
-
+              await context.clear_cookies()
+              await page.evaluate('document.body.style.zoom = "25%"')
+                 
               
-             
-              while self.count<self.min and uid in self.files and tries and self.tlim>self.ctime :
+              url =f'https://www.bing.com/search?count=50&cc={query[7]}&q={self.q}&rdr=1'
+              while self.count<self.min and uid in self.files and self.tlim>self.ctime :
                     try:  
                         await page.goto(url,timeout=10000)
+                        
                         next=page.locator('a[title="Next page"]')
                         flag=True
                         for i in range(0,3): 
                          try:
-                            await next.wait_for(state='attached',timeout=12000)
+                            await page.mouse.wheel(0,29000)
+                            await next.wait_for(state='attached',timeout=15000)
                             await asyncio.sleep(1)
                             items = HTMLParser(await page.content(), 'html.parser').css('.b_algo')
-                            self.pg+=len(items)
                             self.parse(items,uid,query[2],query[3])  
                             flag=False
                          except Exception as e:
-                            await context.clear_cookies()
-                            print("[ERROR]:timed out loading next button...")
+                            print(f"[ERROR]:timed out loading next button...{e}")
                             await page.reload()    
-                        
+                        if flag:
+                            items = HTMLParser(await page.content(), 'html.parser').css('.b_algo')
+                            await context.clear_cookies()
+                            break
                         self.ctime=time.time()-self.ttime
                         print(self.count,self.pg,self.ctime)  
                         
-                        if flag:url=re.sub(r"first=\d+",f'first={self.pg+20}',page.url)               
-                        else: url= r'https://www.bing.com'+(await next.get_attribute('href'))
-                            
-                        counter += 1 
+                        try:
+                            url= r'https://www.bing.com'+(await next.get_attribute('href'))
+                            await page.goto(url,timeout=10000)
+                        except:pass
+                 
                         
                         
                     except Exception as e:print(e)
@@ -164,7 +167,7 @@ class LeadScraper():
                
               self.flg+=1
               await context.clear_cookies()
-              while(self.flg<self.up):await asyncio.sleep(2)
+              
               if(uid in self.files and self.flg>=self.up):
                  data=list(self.files.pop(uid)[2].values())[:self.min]
                  self.query_tasks.get()  
@@ -174,16 +177,16 @@ class LeadScraper():
                  self.flg=0
                  self.data=[]
                  fname=f'./files/{query[5]}_{query[6]}'
-                 await asyncio.gather(self.write_results_to_csv(f'{fname}.csv',data),self.write_results_to_csv(f'{fname}.csv',data))
                  await asyncio.gather(self.write_results_to_csv(f'{fname}.csv',data),self.write_results_to_csv(f'{fname}_raw.csv',data_))
-               
+                 
             else:await asyncio.sleep(1)
        except:pass
 
 
 
     def parse(self,items,uid,*args):
-                count=0
+                link='div.b_attribution cite'
+                caption='.b_caption'
                 for item in items:
                     data_text = item.css_first('.b_caption').text()
                     email = re.search(r'([A-Za-z0-9]+[.-_])*[A-Za-z0-9]+@[+A-Za-z0-9-]+(\.[A-Z|a-z]{2,})+', data_text)
@@ -203,12 +206,12 @@ class LeadScraper():
                     if email and username and followers:                   
                      if  username not in self.files[uid][2]:
                          self.files[uid][2][username]=data
-                         count += 1
+                         self.files[uid][0]+=1
                          self.count+=1
-
-                    else:self.data.append(data)  
-                self.files[uid][0]+=count   
-                return count        
+                    else:self.data.append(data)
+                    self.pg+=1  
+                
+                 
            
     def add(self,data): 
             self.pg=data[1]-10

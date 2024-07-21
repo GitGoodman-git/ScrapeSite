@@ -95,7 +95,7 @@ class LeadScraper():
     async def handler(self):
             
         async with async_playwright() as playwright:  
-            browser = await playwright.chromium.launch(args=args,proxy=self.proxy,headless=True) 
+            browser = await playwright.chromium.launch(args=args,proxy=self.proxy,headless=False) 
             await asyncio.gather(*[self.fetch_search_results(await browser.new_context(user_agent=agent.random,viewport={'width':1000,'height':10000})) for i in range(0,self.up)])
             
     # async def send_json_to_webhook(self,url,niche,location,site,t,p,s,n):
