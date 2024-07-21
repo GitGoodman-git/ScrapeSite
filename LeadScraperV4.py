@@ -37,7 +37,7 @@ args=[
             '--blink-settings=fonts=!',
             '--disable-javascript',
             '--high-dpi-support=0.40',
-            '--force-device-scale-factor=0.4',
+            '--force-device-scale-factor=0.1',
             '--disable-background-timer-throttling',
             '--disable-backgrounding-occluded-windows',
             '--disable-breakpad',
@@ -147,12 +147,13 @@ class LeadScraper():
                             self.parse(items,uid,query[2],query[3])  
                             flag=False
                          except Exception as e:
-                            print(f"[ERROR]:timed out loading next button...{e}")
+                            print(f"[ERROR]:timed out loading next button...")
                             await page.reload()    
                         if flag:
                             items = HTMLParser(await page.content(), 'html.parser').css('.b_algo')
                             await context.clear_cookies()
                             break
+                        
                         self.ctime=time.time()-self.ttime
                         print(self.count,self.pg,self.ctime)  
                         
