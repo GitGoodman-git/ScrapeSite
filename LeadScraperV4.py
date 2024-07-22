@@ -178,6 +178,7 @@ class LeadScraper():
                  self.count=0
                  self.flg=0
                  self.data=[]
+                 print(f'https://leadscraperv2demoasync.eastus.cloudapp.azure.com/get_file?token={query[5]}&uid=query[6]')
                  fname=f'./files/{query[5]}_{query[6]}'
                  await asyncio.gather(self.write_results_to_csv(f'{fname}.csv',data),self.write_results_to_csv(f'{fname}_raw.csv',data_))
                  
