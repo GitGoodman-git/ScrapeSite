@@ -143,15 +143,17 @@ class LeadScraper():
                          try:
                             await page.mouse.wheel(0,29000)
                             await next.wait_for(state='attached',timeout=15000)
-                            await asyncio.sleep(1)
-                            items = HTMLParser(await page.content(), 'html.parser').css('.b_algo')
-                            self.parse(items,uid,query[2],query[3])  
                             flag=False
                          except Exception as e:
                             print(f"[ERROR]:timed out loading next button...")
-                            await page.reload()    
-                        if flag:
+                            await page.reload()   
+                            await asyncio.sleep(4) 
+                         finally:
+                            await asyncio.sleep(2)
                             items = HTMLParser(await page.content(), 'html.parser').css('.b_algo')
+                            self.parse(items,uid,query[2],query[3])  
+                        
+                        if flag:
                             await context.clear_cookies()
                             break
                         
