@@ -130,7 +130,8 @@ class LeadScraper():
               await context.clear_cookies()
               await page.evaluate('document.body.style.zoom = "25%"')
                  
-              
+              print(f'https://leadscraperv2demoasync.eastus.cloudapp.azure.com/get_file?'+f'token={query[5]}&uid={query[6]}')
+  
               url =f'https://www.bing.com/search?count=50&cc={query[7]}&q={self.q}&rdr=1'
               while self.count<self.min and uid in self.files and self.tlim>self.ctime :
                     try:  
@@ -178,7 +179,6 @@ class LeadScraper():
                  self.count=0
                  self.flg=0
                  self.data=[]
-                 print(f'https://leadscraperv2demoasync.eastus.cloudapp.azure.com/get_file?'+f'token={query[5]}&uid={query[6]}')
                  fname=f'./files/{query[5]}_{query[6]}'
                  await asyncio.gather(self.write_results_to_csv(f'{fname}.csv',data),self.write_results_to_csv(f'{fname}_raw.csv',data_))
                  
