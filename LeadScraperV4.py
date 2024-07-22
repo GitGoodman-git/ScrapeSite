@@ -156,9 +156,8 @@ class LeadScraper():
                         if flag:
                             await context.clear_cookies()
                             break
-                        self.files[uid][3]=self.pg
+                        
                         self.ctime=time.time()-self.ttime
-                        self.files[uid][4]=self.ctime
                         print(self.count,self.pg,self.ctime)  
                         
                         try:
